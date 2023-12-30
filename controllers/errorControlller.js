@@ -1,4 +1,4 @@
-const AppError = require("../uitls/AppError");
+const AppError = require("../utils/AppError");
 
 const sendErrorDev = (err, res) => {
   res.status(err.statusCode).json({

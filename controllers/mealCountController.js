@@ -1,7 +1,7 @@
 const Meal = require("../models/mealCountModel");
 const User = require("../models/userModel");
 const YearMonthModel = require("../models/yearMonthModel");
-const AppError = require("../uitls/AppError");
+const AppError = require("../utils/AppError");
 const catchAsyncError = require("../utils/catchAsyncError");
 
 exports.createMeal = catchAsyncError(async (req, res) => {
@@ -24,7 +24,7 @@ exports.createMeal = catchAsyncError(async (req, res) => {
     year: req.body[0].year,
     month: req.body[0].month,
   });
-  console.log(27,yearMonth)
+  console.log(27, yearMonth);
   const meal = await Meal.create(body);
   res.status(201).json({
     status: "Success",
@@ -55,7 +55,7 @@ exports.updateMeal = catchAsyncError(async (req, res) => {
 });
 
 exports.updatePersonFullMeal = catchAsyncError(async (req, res, next) => {
-  console.log(req.body.year)
+  console.log(req.body.year);
   if (
     req.body.userIndex !== req.body.personIndex &&
     req.user.role !== "admin" &&
@@ -114,7 +114,8 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
   if (
     req.body.mealName === "breakfast" &&
     // (new Date() > new Date(req.body.year * 1, month, req.body.day * 1, 6))&&req.user.role!=='admin'
-    new Date() > new Date(req.body.year * 1, req.body.month, req.body.day * 1, 6) &&
+    new Date() >
+      new Date(req.body.year * 1, req.body.month, req.body.day * 1, 6) &&
     req.user.role !== "superadmin" &&
     req.user.role !== "admin"
   ) {
@@ -123,7 +124,8 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
   if (
     req.body.mealName === "launch" &&
     // (new Date() > new Date(req.body.year * 1, month, req.body.day * 1, 10))&&req.user.role!=='admin'
-    new Date() > new Date(req.body.year * 1, req.body.month, req.body.day * 1, 10) &&
+    new Date() >
+      new Date(req.body.year * 1, req.body.month, req.body.day * 1, 10) &&
     req.user.role !== "superadmin" &&
     req.user.role !== "admin"
   ) {
@@ -132,7 +134,8 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
   if (
     req.body.mealName === "dinner" &&
     // new Date(req.body.year * 1, month, req.body.day * 1, 18) < new Date())&&req.user.role!=='admin'
-    new Date(req.body.year * 1, req.body.month, req.body.day * 1, 18) < new Date() &&
+    new Date(req.body.year * 1, req.body.month, req.body.day * 1, 18) <
+      new Date() &&
     req.user.role !== "superadmin" &&
     req.user.role !== "admin"
   ) {
@@ -144,7 +147,8 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
       req.body.mealName === "launch" ||
       req.body.mealName === "dinner") &&
     req.user.role === "admin" &&
-    new Date() > new Date(req.body.year * 1, req.body.month, req.body.day * 1, 24)
+    new Date() >
+      new Date(req.body.year * 1, req.body.month, req.body.day * 1, 24)
   ) {
     return next(new AppError("Admin can not update previous days meal", 400));
   }

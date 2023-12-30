@@ -1,6 +1,6 @@
 const Meal = require("../models/mealCountModel");
 const User = require("../models/userModel");
-const AppError = require("../uitls/AppError");
+const AppError = require("../utils/AppError");
 const catchAsyncError = require("../utils/catchAsyncError");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
