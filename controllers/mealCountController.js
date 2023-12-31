@@ -6,7 +6,6 @@ const catchAsyncError = require("../utils/catchAsyncError");
 
 exports.createMeal = catchAsyncError(async (req, res) => {
   const users = await User.find();
-  console.log("users", users);
   const borders = users.filter((user) => user.role !== "superadmin");
   const body = req.body.map((el) => {
     return {
@@ -19,12 +18,10 @@ exports.createMeal = catchAsyncError(async (req, res) => {
       dinner: Array(borders.length).fill([0, "on", "admin"]),
     };
   });
-  console.log("body", body);
   const yearMonth = await YearMonthModel.create({
     year: req.body[0].year,
     month: req.body[0].month,
   });
-  console.log(27, yearMonth);
   const meal = await Meal.create(body);
   res.status(201).json({
     status: "Success",
@@ -55,7 +52,6 @@ exports.updateMeal = catchAsyncError(async (req, res) => {
 });
 
 exports.updatePersonFullMeal = catchAsyncError(async (req, res, next) => {
-  console.log(req.body.year);
   if (
     req.body.userIndex !== req.body.personIndex &&
     req.user.role !== "admin" &&
@@ -167,7 +163,6 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
   }
   const personMeal = (existingMeal[req.body.mealIndex] =
     req.body[req.body.mealName][req.body.mealIndex]);
-  console.log("person", personMeal);
   personMeal[2] =
     personMeal[0] === 0 && personMeal[1] === "on" ? "admin" : req.user.role;
   meal[req.body.mealName] = existingMeal;
@@ -270,7 +265,6 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
       },
     },
   ]);
-  console.log(53, monthlyMeals);
   res.status(200).json({
     status: "Success",
     monthlyMeals,
@@ -316,7 +310,6 @@ exports.dailyMealCalc = catchAsyncError(async (req, res) => {
       },
     },
   ]);
-  console.log(53, monthlyMeals);
   res.status(200).json({
     status: "Success",
     monthlyMeals,

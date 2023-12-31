@@ -37,9 +37,7 @@ exports.protect = catchAsyncError(async (req, res, next) => {
       new AppError(`You are now not logged in, Please log in first`, 400)
     );
   const decoded = await promisify(jwt.verify)(token, process.env.SECRET_KEY);
-  console.log(decoded);
   const currentUser = await User.findById(decoded.id);
-  console.log("currentUser => ", currentUser);
   if (!currentUser)
     return next(
       new AppError(`The user belonging this token is no longer exist`, 400)
@@ -73,9 +71,9 @@ exports.signUp = catchAsyncError(async (req, res, next) => {
     password,
     passwordConfirm,
   });
-  console.log(user.name);
-  const currentMonthMeals = await Meal.find({ month: 10, year: 2023 });
-  console.log(73, currentMonthMeals);
+  console.log("hello world");
+  const currentMonthMeals = await Meal.find({ month: 0, year: 2024 });
+  console.log("haha", currentMonthMeals);
   currentMonthMeals.map(async (el, i) => {
     const borders = [...el.border, user.name];
     const breakfasts = [...el.breakfast, [0, "on"]];
