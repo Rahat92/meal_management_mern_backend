@@ -75,11 +75,11 @@ exports.signUp = catchAsyncError(async (req, res, next) => {
   const currentMonthMeals = await Meal.find({ month: 0, year: 2024 });
   console.log("haha", currentMonthMeals);
   currentMonthMeals.map(async (el, i) => {
-    const borders = [...el.border, user.name];
-    const breakfasts = [...el.breakfast, [0, "on"]];
+    const borders = [...el.border, user];
+    const breakfasts = [...el.breakfast, [0, "on", "admin"]];
     console.log(77, breakfasts);
-    const launchs = [...el.launch, [0, "on"]];
-    const dinners = [...el.dinner, [0, "on"]];
+    const launchs = [...el.launch, [0, "on", "admin"]];
+    const dinners = [...el.dinner, [0, "on", "admin"]];
     await Meal.findByIdAndUpdate(el._id, {
       border: borders,
       breakfast: breakfasts,
