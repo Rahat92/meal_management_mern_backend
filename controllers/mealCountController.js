@@ -57,9 +57,13 @@ exports.updatePersonFullMeal = catchAsyncError(async (req, res, next) => {
     req.user.role !== "admin" &&
     req.user.role !== "superadmin"
   ) {
-    return next(
-      new AppError("You are not allowed to perform this action!", 400)
-    );
+    // return next(
+    //   new AppError("You are not allowed to perform this action!", 400)
+    // );
+    return res.status(400).json({
+      status: "Fail",
+      message: "You are not allowed to perform this action!",
+    });
   }
 
   if (
@@ -67,15 +71,23 @@ exports.updatePersonFullMeal = catchAsyncError(async (req, res, next) => {
     req.user.role !== "admin" &&
     req.user.role !== "superadmin"
   ) {
-    return next(new AppError("Full Meal update time is over", 400));
+    // return next(new AppError("Full Meal update time is over", 400));
+    return res.status(400).json({
+      status: "Fail",
+      message: "Full Meal update time is over",
+    });
   }
   if (
     req.user.role === "admin" &&
     new Date() > new Date(req.body.year, req.body.month, req.body.day, 24)
   ) {
-    return next(
-      new AppError("Admin is now allowed to update previous day meal", 400)
-    );
+    // return next(
+    //   new AppError("Admin is not allowed to update previous day meal", 400)
+    // );
+    return res.status(400).json({
+      status: "Fail",
+      message: "Admin is not allowed to update previous day meal",
+    });
   }
   const existingMeal = await Meal.findById(req.body.id);
   const breakfasts = existingMeal.breakfast;
@@ -105,7 +117,11 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
     req.user.role !== "superadmin" &&
     req.user.role !== "admin"
   ) {
-    return next(new AppError("You only can update your meal", 400));
+    // return next(new AppError("You only can update your meal", 400));
+    return res.status(400).json({
+      status: "Fail",
+      message: "You only can update your meal",
+    });
   }
   if (
     req.body.mealName === "breakfast" &&
@@ -129,7 +145,11 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
     req.user.role !== "superadmin" &&
     req.user.role !== "admin"
   ) {
-    return next(new AppError("Launch meal request time is over", 400));
+    // return next(new AppError("Launch meal request time is over", 400));
+    return res.status(400).json({
+      status: "Fail",
+      message: "Launch meal request time is over",
+    });
   }
   if (
     req.body.mealName === "dinner" &&
@@ -139,7 +159,11 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
     req.user.role !== "superadmin" &&
     req.user.role !== "admin"
   ) {
-    return next(new AppError("Dinner meal request time is over", 400));
+    // return next(new AppError("Dinner meal request time is over", 400));
+    return res.status(400).json({
+      status: "Fail",
+      message: "Dinner meal request time is over",
+    });
   }
 
   if (
@@ -150,7 +174,11 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
     new Date() >
       new Date(req.body.year * 1, req.body.month, req.body.day * 1, 24)
   ) {
-    return next(new AppError("Admin can not update previous days meal", 400));
+    // return next(new AppError("Admin can not update previous days meal", 400));
+    return res.status(400).json({
+      status: "Fail",
+      message: "Admin can not update previous days meal",
+    });
   }
   const meal = await Meal.findById(req.params.id);
   const existingMeal = [...meal[req.body.mealName]];
@@ -158,12 +186,17 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
     existingMeal[req.body.mealIndex][2] === "user" &&
     req.user.role === "admin"
   ) {
-    return next(
-      new AppError(
+    // return next(
+    //   new AppError(
+    //     "This meal is setted by user.Therefore Admin can not update this meal.",
+    //     400
+    //   )
+    // );
+    return res.status(400).json({
+      status: "Fail",
+      message:
         "This meal is setted by user.Therefore Admin can not update this meal.",
-        400
-      )
-    );
+    });
   }
   const personMeal = (existingMeal[req.body.mealIndex] =
     req.body[req.body.mealName][req.body.mealIndex]);
@@ -178,12 +211,17 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
 });
 exports.updateMoney = catchAsyncError(async (req, res, next) => {
   if (req.user.role !== "admin") {
-    return next(
-      new AppError(
+    // return next(
+    //   new AppError(
+    //     "You have no permisson to update your balance, only admin can do this",
+    //     400
+    //   )
+    // );
+    return res.status(400).json({
+      status: "Fail",
+      message:
         "You have no permisson to update your balance, only admin can do this",
-        400
-      )
-    );
+    });
   }
   const meal = await Meal.findById(req.body.id);
   console.log(meal);
@@ -199,12 +237,17 @@ exports.updateMoney = catchAsyncError(async (req, res, next) => {
 });
 exports.updateShopMoney = catchAsyncError(async (req, res, next) => {
   if (req.user.role !== "admin") {
-    return next(
-      new AppError(
+    // return next(
+    //   new AppError(
+    //     "You have no permisson to update your balance, only admin can do this",
+    //     400
+    //   )
+    // );
+    return res.status(400).json({
+      status: "Fail",
+      message:
         "You have no permisson to update your balance, only admin can do this",
-        400
-      )
-    );
+    });
   }
   const meal = await Meal.findById(req.body.id);
   console.log(meal);
