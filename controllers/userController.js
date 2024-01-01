@@ -80,11 +80,15 @@ exports.signUp = catchAsyncError(async (req, res, next) => {
     console.log(77, breakfasts);
     const launchs = [...el.launch, [0, "on", "admin"]];
     const dinners = [...el.dinner, [0, "on", "admin"]];
+    const shops = [...el.shop, 0];
+    const moneys = [...el.money, 0];
     await Meal.findByIdAndUpdate(el._id, {
       border: borders,
       breakfast: breakfasts,
       launch: launchs,
       dinner: dinners,
+      shop: shops,
+      money: moneys
     });
   });
   resAndSendToken(user, res, 201);
