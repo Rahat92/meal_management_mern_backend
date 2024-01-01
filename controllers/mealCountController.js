@@ -116,7 +116,7 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
     req.user.role !== "admin"
   ) {
     // return next(new AppError("Breakfast meal request time is over", 400));
-    res.status(400).json({
+    return res.status(400).json({
       status: "Fail",
       message: "Breakfast meal request time is over",
     });
