@@ -154,8 +154,7 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
   if (
     req.body.mealName === "dinner" &&
     // new Date(req.body.year * 1, month, req.body.day * 1, 18) < new Date())&&req.user.role!=='admin'
-    new Date(req.body.year * 1, req.body.month, req.body.day * 1, 18) <
-      new Date() &&
+    new Date()>new Date(req.body.year * 1, req.body.month, req.body.day * 1, 18) &&
     req.user.role !== "superadmin" &&
     req.user.role !== "admin"
   ) {
