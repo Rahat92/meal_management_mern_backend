@@ -151,10 +151,12 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
       message: "Launch meal request time is over",
     });
   }
+  console.log(req.body.mealName)
   if (
     req.body.mealName === "dinner" &&
     // new Date(req.body.year * 1, month, req.body.day * 1, 18) < new Date())&&req.user.role!=='admin'
-    new Date()>new Date(req.body.year * 1, req.body.month, req.body.day * 1, 18) &&
+    new Date() >
+      new Date(req.body.year * 1, req.body.month, req.body.day * 1, 18) &&
     req.user.role !== "superadmin" &&
     req.user.role !== "admin"
   ) {
