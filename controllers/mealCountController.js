@@ -79,7 +79,7 @@ exports.updatePersonFullMeal = catchAsyncError(async (req, res, next) => {
   }
   if (
     req.user.role === "admin" &&
-    new Date() > new Date(req.body.year, req.body.month, req.body.day, 24)
+    new Date() > new Date(req.body.year, req.body.month, req.body.day, 23, 59, 59)
   ) {
     // return next(
     //   new AppError("Admin is not allowed to update previous day meal", 400)
