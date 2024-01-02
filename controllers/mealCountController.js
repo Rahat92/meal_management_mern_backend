@@ -152,15 +152,16 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
     });
   }
   console.log(req.body.mealName);
+  console.log(new Date().toDateString());
   console.log(
     new Date() >
       new Date(req.body.year * 1, req.body.month, req.body.day * 1, 18)
   );
   if (
     req.body.mealName === "dinner" &&
-    // new Date(req.body.year * 1, month, req.body.day * 1, 18) < new Date())&&req.user.role!=='admin'
+    // (new Date() > new Date(req.body.year * 1, month, req.body.day * 1, 10))&&req.user.role!=='admin'
     new Date() >
-      new Date(req.body.year * 1, req.body.month, req.body.day * 1, 18) &&
+      new Date(req.body.year * 1, req.body.month, req.body.day * 1, 10) &&
     req.user.role !== "superadmin" &&
     req.user.role !== "admin"
   ) {
@@ -215,7 +216,7 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
   });
 });
 exports.updateMoney = catchAsyncError(async (req, res, next) => {
-  if (req.user.role !== "admin") {
+  if (req.user.role !== "admin" && req.user.role !== "superadmin") {
     // return next(
     //   new AppError(
     //     "You have no permisson to update your balance, only admin can do this",
@@ -241,7 +242,7 @@ exports.updateMoney = catchAsyncError(async (req, res, next) => {
   });
 });
 exports.updateShopMoney = catchAsyncError(async (req, res, next) => {
-  if (req.user.role !== "admin") {
+  if (req.user.role !== "admin" && req.user.role !== "superadmin") {
     // return next(
     //   new AppError(
     //     "You have no permisson to update your balance, only admin can do this",
