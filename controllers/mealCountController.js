@@ -52,6 +52,8 @@ exports.updateMeal = catchAsyncError(async (req, res) => {
 });
 
 exports.updatePersonFullMeal = catchAsyncError(async (req, res, next) => {
+  console.log(req.body.requestTime);
+  const { requestTime } = req.body;
   if (
     req.body.userIndex !== req.body.personIndex &&
     req.user.role !== "admin" &&
@@ -272,12 +274,13 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
   const monthlyMeals = await Meal.aggregate([
     // {
     //   $match: {
-    //     month: 10,
+    //     year: 2024,
     //   },
     // },
     {
       $project: {
         month: 1,
+        year: 1,
         x: {
           $zip: {
             inputs: [
@@ -305,17 +308,22 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
         money: { $arrayElemAt: ["$x", 4] },
         shop: { $arrayElemAt: ["$x", 5] },
         month: 1,
+        year: 1,
       },
     },
     {
       $group: {
-        _id: "$month",
+        _id: {
+          month: "$month",
+          year: "$year",
+        },
         border: { $push: "$border" },
         breakfast: { $push: "$breakfast" },
         launch: { $push: "$launch" },
         dinner: { $push: "$dinner" },
         money: { $push: "$money" },
         shop: { $push: "$shop" },
+        year: { $push: "$year" },
       },
     },
   ]);
