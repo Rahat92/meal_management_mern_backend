@@ -126,69 +126,69 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
       message: "You only can update your meal",
     });
   }
-  if (
-    req.body.mealName === "breakfast" &&
-    // (new Date() > new Date(req.body.year * 1, month, req.body.day * 1, 6))&&req.user.role!=='admin'
-    new Date() >
-      new Date(req.body.year * 1, req.body.month, req.body.day * 1, 6) &&
-    req.user.role !== "superadmin" &&
-    req.user.role !== "admin"
-  ) {
-    // return next(new AppError("Breakfast meal request time is over", 400));
-    return res.status(400).json({
-      status: "Fail",
-      message: "Breakfast meal request time is over",
-    });
-  }
-  if (
-    req.body.mealName === "launch" &&
-    // (new Date() > new Date(req.body.year * 1, month, req.body.day * 1, 10))&&req.user.role!=='admin'
-    new Date() >
-      new Date(req.body.year * 1, req.body.month, req.body.day * 1, 10) &&
-    req.user.role !== "superadmin" &&
-    req.user.role !== "admin"
-  ) {
-    // return next(new AppError("Launch meal request time is over", 400));
-    return res.status(400).json({
-      status: "Fail",
-      message: "Launch meal request time is over",
-    });
-  }
-  console.log(req.body.mealName);
-  console.log(new Date().toDateString());
-  console.log(
-    new Date() >
-      new Date(req.body.year * 1, req.body.month, req.body.day * 1, 18)
-  );
-  if (
-    req.body.mealName === "dinner" &&
-    // (new Date() > new Date(req.body.year * 1, month, req.body.day * 1, 10))&&req.user.role!=='admin'
-    new Date() >
-      new Date(req.body.year * 1, req.body.month, req.body.day * 1, 10) &&
-    req.user.role !== "superadmin" &&
-    req.user.role !== "admin"
-  ) {
-    // return next(new AppError("Dinner meal request time is over", 400));
-    return res.status(400).json({
-      status: "Fail",
-      message: "Dinner meal request time is over",
-    });
-  }
+  // if (
+  //   req.body.mealName === "breakfast" &&
+  //   // (new Date() > new Date(req.body.year * 1, month, req.body.day * 1, 6))&&req.user.role!=='admin'
+  //   new Date() >
+  //     new Date(req.body.year * 1, req.body.month, req.body.day * 1, 6) &&
+  //   req.user.role !== "superadmin" &&
+  //   req.user.role !== "admin"
+  // ) {
+  //   // return next(new AppError("Breakfast meal request time is over", 400));
+  //   return res.status(400).json({
+  //     status: "Fail",
+  //     message: "Breakfast meal request time is over",
+  //   });
+  // }
+  // if (
+  //   req.body.mealName === "launch" &&
+  //   // (new Date() > new Date(req.body.year * 1, month, req.body.day * 1, 10))&&req.user.role!=='admin'
+  //   new Date() >
+  //     new Date(req.body.year * 1, req.body.month, req.body.day * 1, 10) &&
+  //   req.user.role !== "superadmin" &&
+  //   req.user.role !== "admin"
+  // ) {
+  //   // return next(new AppError("Launch meal request time is over", 400));
+  //   return res.status(400).json({
+  //     status: "Fail",
+  //     message: "Launch meal request time is over",
+  //   });
+  // }
+  // console.log(req.body.mealName);
+  // console.log(new Date().toDateString());
+  // console.log(
+  //   new Date() >
+  //     new Date(req.body.year * 1, req.body.month, req.body.day * 1, 18)
+  // );
+  // if (
+  //   req.body.mealName === "dinner" &&
+  //   // (new Date() > new Date(req.body.year * 1, month, req.body.day * 1, 10))&&req.user.role!=='admin'
+  //   new Date() >
+  //     new Date(req.body.year * 1, req.body.month, req.body.day * 1, 10) &&
+  //   req.user.role !== "superadmin" &&
+  //   req.user.role !== "admin"
+  // ) {
+  //   // return next(new AppError("Dinner meal request time is over", 400));
+  //   return res.status(400).json({
+  //     status: "Fail",
+  //     message: "Dinner meal request time is over",
+  //   });
+  // }
 
-  if (
-    (req.body.mealName === "breakfast" ||
-      req.body.mealName === "launch" ||
-      req.body.mealName === "dinner") &&
-    req.user.role === "admin" &&
-    new Date() >
-      new Date(req.body.year * 1, req.body.month, req.body.day * 1, 24)
-  ) {
-    // return next(new AppError("Admin can not update previous days meal", 400));
-    return res.status(400).json({
-      status: "Fail",
-      message: "Admin can not update previous days meal",
-    });
-  }
+  // if (
+  //   (req.body.mealName === "breakfast" ||
+  //     req.body.mealName === "launch" ||
+  //     req.body.mealName === "dinner") &&
+  //   req.user.role === "admin" &&
+  //   new Date() >
+  //     new Date(req.body.year * 1, req.body.month, req.body.day * 1, 24)
+  // ) {
+  //   // return next(new AppError("Admin can not update previous days meal", 400));
+  //   return res.status(400).json({
+  //     status: "Fail",
+  //     message: "Admin can not update previous days meal",
+  //   });
+  // }
   const meal = await Meal.findById(req.params.id);
   const existingMeal = [...meal[req.body.mealName]];
   if (
