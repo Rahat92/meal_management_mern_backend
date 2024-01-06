@@ -13,9 +13,10 @@ exports.createMeal = catchAsyncError(async (req, res) => {
       border: borders,
       money: Array(borders.length).fill(0),
       shop: Array(borders.length).fill(0),
-      breakfast: Array(borders.length).fill([0, "on", "admin"]),
-      launch: Array(borders.length).fill([0, "on", "admin"]),
-      dinner: Array(borders.length).fill([0, "on", "admin"]),
+      extraShop: Array(borders.length).fill(0),
+      breakfast: Array(borders.length).fill([.5, "on", "admin"]),
+      launch: Array(borders.length).fill([1, "on", "admin"]),
+      dinner: Array(borders.length).fill([1, "on", "admin"]),
     };
   });
   const yearMonth = await YearMonthModel.create({
@@ -233,8 +234,6 @@ exports.updateMoney = catchAsyncError(async (req, res, next) => {
     });
   }
   const meal = await Meal.findById(req.body.id);
-  console.log(meal);
-
   const copyBorderMoneyArr = [...meal.money];
   copyBorderMoneyArr[req.body.borderIndex] = req.body.money;
   meal.money = copyBorderMoneyArr;
@@ -270,13 +269,45 @@ exports.updateShopMoney = catchAsyncError(async (req, res, next) => {
     meal,
   });
 });
+exports.updateExtraShopMoney = catchAsyncError(async (req, res, next) => {
+  if (req.user.role !== "admin" && req.user.role !== "superadmin") {
+    // return next(
+    //   new AppError(
+    //     "You have no permisson to update your balance, only admin can do this",
+    //     400
+    //   )
+    // );
+    return res.status(400).json({
+      status: "Fail",
+      message:
+        "You have no permisson to update your Extra Shop, only admin can do this",
+    });
+  }
+  const meal = await Meal.findById(req.body.id);
+  console.log(meal);
+
+  const copyBorderExtraShopMoneyArr = [...meal.extraShop];
+  copyBorderExtraShopMoneyArr[req.body.borderIndex] = req.body.extraShop;
+  meal.extraShop = copyBorderExtraShopMoneyArr;
+  await meal.save();
+  res.status(200).json({
+    status: "Success",
+    meal,
+  });
+});
+
 exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
   const monthlyMeals = await Meal.aggregate([
-    // {
-    //   $match: {
-    //     year: 2024,
-    //   },
-    // },
+    {
+      $match: {
+        year: 2024,
+        month: 0,
+        day: {
+          $gte: 0,
+          $lte: 7
+        }
+      },
+    },
     {
       $project: {
         month: 1,
@@ -290,6 +321,7 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
               "$dinner",
               "$money",
               "$shop",
+              "$extraShop"
             ],
           },
         },
@@ -307,6 +339,7 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
         dinner: { $arrayElemAt: ["$x", 3] },
         money: { $arrayElemAt: ["$x", 4] },
         shop: { $arrayElemAt: ["$x", 5] },
+        extraShop: {$arrayElemAt: ["$x", 6]},
         month: 1,
         year: 1,
       },
@@ -323,7 +356,7 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
         dinner: { $push: "$dinner" },
         money: { $push: "$money" },
         shop: { $push: "$shop" },
-        year: { $push: "$year" },
+        extraShop: { $push: "$extraShop" },
       },
     },
   ]);

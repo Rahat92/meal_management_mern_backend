@@ -18,6 +18,10 @@ const mealCountSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Must have a year"],
     },
+    day: {
+      type: Number,
+      required: [true, "Must have a day"],
+    },
     border: [
       {
         type: Object,
@@ -30,6 +34,11 @@ const mealCountSchema = new mongoose.Schema(
       },
     ],
     shop: [
+      {
+        type: Number,
+      }
+    ],
+    extraShop: [
       {
         type: Number,
       }
