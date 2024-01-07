@@ -14,7 +14,7 @@ exports.createMeal = catchAsyncError(async (req, res) => {
       money: Array(borders.length).fill(0),
       shop: Array(borders.length).fill(0),
       extraShop: Array(borders.length).fill(0),
-      breakfast: Array(borders.length).fill([.5, "on", "admin"]),
+      breakfast: Array(borders.length).fill([0.5, "on", "admin"]),
       launch: Array(borders.length).fill([1, "on", "admin"]),
       dinner: Array(borders.length).fill([1, "on", "admin"]),
     };
@@ -297,15 +297,16 @@ exports.updateExtraShopMoney = catchAsyncError(async (req, res, next) => {
 });
 
 exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
+  const { month, year, day } = req.params
   const monthlyMeals = await Meal.aggregate([
     {
       $match: {
-        year: 2024,
-        month: 0,
+        year: year*1,
         day: {
-          $gte: 0,
-          $lte: 7
-        }
+          $gte: 1,
+          $lte: day*1,
+        },
+        month: month*1,
       },
     },
     {
@@ -321,7 +322,7 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
               "$dinner",
               "$money",
               "$shop",
-              "$extraShop"
+              "$extraShop",
             ],
           },
         },
@@ -339,7 +340,7 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
         dinner: { $arrayElemAt: ["$x", 3] },
         money: { $arrayElemAt: ["$x", 4] },
         shop: { $arrayElemAt: ["$x", 5] },
-        extraShop: {$arrayElemAt: ["$x", 6]},
+        extraShop: { $arrayElemAt: ["$x", 6] },
         month: 1,
         year: 1,
       },

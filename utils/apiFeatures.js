@@ -12,7 +12,7 @@ class ApiFeature {
           },
         }
       : {};
-    console.log('key',keyword)
+    console.log("key", keyword);
     this.query = this.query.find({ ...keyword });
     return this;
   }
@@ -36,7 +36,7 @@ class ApiFeature {
     return this;
   }
   sort() {
-    this.query = this.query.sort("-cartAt -_id");
+    this.query = this.query.sort("-month -year");
     return this;
   }
 }
