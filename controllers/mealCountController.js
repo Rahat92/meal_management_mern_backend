@@ -297,16 +297,16 @@ exports.updateExtraShopMoney = catchAsyncError(async (req, res, next) => {
 });
 
 exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
-  const { month, year, day } = req.params
+  const { month, year, day } = req.params;
   const monthlyMeals = await Meal.aggregate([
     {
       $match: {
-        year: year*1,
+        year: year * 1,
         day: {
           $gte: 1,
-          $lte: day*1,
+          $lte: day * 1,
         },
-        month: month*1,
+        month: 0,
       },
     },
     {
