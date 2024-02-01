@@ -304,7 +304,7 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
         year: year * 1,
         day: {
           $gte: 1,
-          $lte: day * 1,
+          $lte: 31,
         },    
         month: 0,
       },
