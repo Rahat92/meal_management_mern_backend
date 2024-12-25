@@ -100,7 +100,6 @@ sendTransacSms = {
 };
 
 apiInstance.sendTransacSms(sendTransacSms).then(function(data) {
-  console.log('API called successfully. Returned data: ' + JSON.stringify(data));
 }, function(error) {
   console.error(error);
 });

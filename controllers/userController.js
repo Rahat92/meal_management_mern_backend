@@ -35,7 +35,6 @@ exports.protect = catchAsyncError(async (req, res, next) => {
   if (req.headers.authorization.startsWith("Bearer")) {
     token = req.headers.authorization.split(" ")[1];
   }
-  console.log(token);
   if (!token) {
     // return next(
     //   new AppError(`You are now not logged in, Please log in first`, 400)
@@ -109,7 +108,6 @@ exports.signUp = catchAsyncError(async (req, res, next) => {
   currentMonthMeals.map(async (el, i) => {
     const borders = [...el.border, user];
     const breakfasts = [...el.breakfast, [0, "on", "admin"]];
-    console.log(77, breakfasts);
     const launchs = [...el.launch, [0, "on", "admin"]];
     const dinners = [...el.dinner, [0, "on", "admin"]];
     const shops = [...el.shop, 0];
@@ -127,24 +125,18 @@ exports.signUp = catchAsyncError(async (req, res, next) => {
 });
 
 exports.forgotPassword = catchAsyncError(async (req, res, next) => {
-  console.log("forgot password");
   const { email } = req.body;
-  console.log(email);
   const user = await User.findOne({ email });
   if (!user) {
     return next(new AppError(`No user found with this email`, 400));
   }
-  console.log(user);
   const resetToken = user.createPasswordResetToken();
-  console.log(resetToken);
   await user.save({ validateBeforeSave: false });
-  console.log('fine')
   try {
     const resetUrl = `${req.protocol}://${req.get(
       "host"
     )}/api/v1/users/reset-password/${resetToken}`;
     // send email
-    console.log(resetUrl);
 
     res.status(200).json({
       status: "success",
@@ -186,7 +178,6 @@ exports.logOut = catchAsyncError(async (req, res, next) => {
 });
 
 exports.sendMessage = catchAsyncError(async (req, res) => {
-  console.log(req.body);
   const sendSms = async (body) => {
     let smsOption = {
       from: "+17178379376",
@@ -195,7 +186,6 @@ exports.sendMessage = catchAsyncError(async (req, res) => {
     };
     try {
       const message = await client.messages.create(smsOption);
-      console.log(message);
     } catch (error) {
       console.error(error);
     }

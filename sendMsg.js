@@ -12,7 +12,6 @@ const sendMessage = catchAsyncError(async (req, res) => {
     };
     try {
       const message = await client.messages.create(smsOption);
-      console.log(message);
     } catch (error) {
       console.error(error);
     }

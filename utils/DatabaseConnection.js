@@ -11,4 +11,5 @@ const connectToDb = () => {
     .then(() => console.log("Successfully connect Database with the app"));
 };
 
+console.log('')
 module.exports = connectToDb;

@@ -51,8 +51,8 @@ app.all("*", (req, res, next) => {
 // });
 
 // run a task every 50 second
-cron.schedule('*/50 * * * * *', () => {
-  console.log('running a task every 50 second');
-});
+// cron.schedule('*/50 * * * * *', () => {
+//   console.log('running a task every 50 second');
+// });
 app.use(errorControlller);
 module.exports = app;

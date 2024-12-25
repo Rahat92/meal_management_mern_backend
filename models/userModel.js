@@ -55,7 +55,6 @@ userSchema.methods.isPasswordChanged = function (jwtTimeStamp) {
 };
 
 userSchema.methods.createPasswordResetToken = function () {
-  console.log("good job");
   const resetToken = crypto.randomBytes(32).toString("hex");
   this.passwordResetToken = crypto
     .createHash("sha256")

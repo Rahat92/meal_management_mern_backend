@@ -19,6 +19,7 @@ exports.createMeal = catchAsyncError(async (req, res) => {
       dinner: Array(borders.length).fill([1, "on", "admin"]),
     };
   });
+  console.log(body)
   const yearMonth = await YearMonthModel.create({
     year: req.body[0].year,
     month: req.body[0].month,
@@ -53,7 +54,6 @@ exports.updateMeal = catchAsyncError(async (req, res) => {
 });
 
 exports.updatePersonFullMeal = catchAsyncError(async (req, res, next) => {
-  console.log(req.body.requestTime);
   const { requestTime } = req.body;
   if (
     req.body.userIndex !== req.body.personIndex &&
@@ -195,7 +195,6 @@ exports.updateShopMoney = catchAsyncError(async (req, res, next) => {
     });
   }
   const meal = await Meal.findById(req.body.id);
-  console.log(meal);
 
   const copyBorderShopMoneyArr = [...meal.shop];
   copyBorderShopMoneyArr[req.body.borderIndex] = req.body.shop;
@@ -221,7 +220,6 @@ exports.updateExtraShopMoney = catchAsyncError(async (req, res, next) => {
     });
   }
   const meal = await Meal.findById(req.body.id);
-  console.log(meal);
 
   const copyBorderExtraShopMoneyArr = [...meal.extraShop];
   copyBorderExtraShopMoneyArr[req.body.borderIndex] = req.body.extraShop;
@@ -236,14 +234,13 @@ exports.updateExtraShopMoney = catchAsyncError(async (req, res, next) => {
 exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
   const { month, year, day } = req.params;
   const currentMonth = new Date().getMonth();
-  console.log("currentMOnth", currentMonth, month);
   const monthlyMeals = await Meal.aggregate([
     {
       $match: {
         year: year * 1,
         day: {
           $gte: 1,
-          $lte: currentMonth !== month ? 31 : day * 1,
+          $lte: currentMonth !== Number(month) ? 31 : day * 1,
         },
         month: month * 1,
       },
