@@ -8,7 +8,7 @@ const errorControlller = require("./controllers/errorControlller");
 const cookieParser = require("cookie-parser");
 const mealCountRouter = require("./routes/mealCountRoutes");
 const yearMonthRouter = require("./routes/yearMonthRoutes");
-const conversationRouter = require("./routes/ConversationRoutes");
+const conversationRouter = require("./routes/conversationRoutes");
 const messageRouter = require("./routes/messageRoutes");
 
 
