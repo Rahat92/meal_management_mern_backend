@@ -14,7 +14,7 @@ exports.createMeal = catchAsyncError(async (req, res) => {
       money: Array(borders.length).fill(0),
       shop: Array(borders.length).fill(0),
       extraShop: Array(borders.length).fill(0),
-      breakfast: Array(borders.length).fill([0.5, "on", "admin"]),
+      breakfast: Array(borders.length).fill([0, "on", "admin"]),
       launch: Array(borders.length).fill([1, "on", "admin"]),
       dinner: Array(borders.length).fill([1, "on", "admin"]),
     };
@@ -297,6 +297,7 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
       },
     },
   ]);
+  console.log(300, monthlyMeals)
   res.status(200).json({
     status: "Success",
     monthlyMeals,

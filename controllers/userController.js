@@ -89,6 +89,7 @@ exports.restrictedTo = (...roles) => {
 
 exports.signUp = catchAsyncError(async (req, res, next) => {
   const { name, email, password, passwordConfirm } = req.body;
+  console.log(password, passwordConfirm)
   if (password !== passwordConfirm) {
     // return next(
     //   new AppError(`Password and Confirm Password doesn't match`, 400)
@@ -104,13 +105,14 @@ exports.signUp = catchAsyncError(async (req, res, next) => {
     password,
     passwordConfirm,
   });
-  const currentMonthMeals = await Meal.find({ month: 0, year: 2024 });
+  const currentMonthMeals = await Meal.find({ month: 0, year: 2025 });
   currentMonthMeals.map(async (el, i) => {
     const borders = [...el.border, user];
     const breakfasts = [...el.breakfast, [0, "on", "admin"]];
-    const launchs = [...el.launch, [0, "on", "admin"]];
-    const dinners = [...el.dinner, [0, "on", "admin"]];
+    const launchs = [...el.launch, [1, "on", "admin"]];
+    const dinners = [...el.dinner, [1, "on", "admin"]];
     const shops = [...el.shop, 0];
+    const extraShops = [...el.extraShop, 0];
     const moneys = [...el.money, 0];
     await Meal.findByIdAndUpdate(el._id, {
       border: borders,
@@ -119,6 +121,7 @@ exports.signUp = catchAsyncError(async (req, res, next) => {
       dinner: dinners,
       shop: shops,
       money: moneys,
+      extraShop: extraShops
     });
   });
   resAndSendToken(user, res, 201);
