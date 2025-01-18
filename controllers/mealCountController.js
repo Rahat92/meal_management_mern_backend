@@ -297,7 +297,6 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
       },
     },
   ]);
-  console.log(300, monthlyMeals)
   res.status(200).json({
     status: "Success",
     monthlyMeals,
@@ -348,3 +347,11 @@ exports.dailyMealCalc = catchAsyncError(async (req, res) => {
     monthlyMeals,
   });
 });
+
+
+exports.deleteAMonth = catchAsyncError(async (req,res,next) => {
+  await Meal.deleteMany({
+    month:1,
+    year:2025
+  })
+})

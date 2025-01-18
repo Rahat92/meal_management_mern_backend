@@ -1,6 +1,7 @@
 const catchAsync = require("../utils/catchAsyncError");
 const ApiFeatures = require("../utils/apiFeatures");
 const YearMonth = require("../models/yearMonthModel");
+const Meal = require("../models/mealCountModel");
 exports.createYearMonth = catchAsync(async (req, res) => {
   const yearMonth = await YearMonth.create(req.body);
   res.status(201).json({
@@ -27,9 +28,15 @@ exports.getYearMonth = catchAsync(async (req, res) => {
 });
 
 exports.deleteYearMonth = catchAsync(async (req, res) => {
-  const yearMonth = await YearMonth.findByIdAndDelete(req.params.id);
+  const {year, month} = req.body;
+  console.log(year,month)
+  await YearMonth.findByIdAndDelete(req.params.id);
+  await Meal.deleteMany({
+    month: Number(month),
+    year: Number(year)
+  })
   res.status(204).json({
     status: "Success",
-    yearMonth,
+    message: 'Successfully delete a month.',
   });
 });
