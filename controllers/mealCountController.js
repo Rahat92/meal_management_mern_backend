@@ -11,6 +11,7 @@ exports.createMeal = catchAsyncError(async (req, res) => {
     return {
       ...el,
       border: borders,
+      customers: borders.map(el => el._id),
       money: Array(borders.length).fill(0),
       shop: Array(borders.length).fill(0),
       extraShop: Array(borders.length).fill(0),
@@ -35,7 +36,7 @@ exports.getMonthMeals = catchAsyncError(async (req, res) => {
   const monthlyMeals = await Meal.find({
     month: req.params.month,
     year: req.params.year,
-  });
+  }).populate('border');
   res.status(200).json({
     status: "Success",
     month: req.params.month,
@@ -237,12 +238,12 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
   const monthlyMeals = await Meal.aggregate([
     {
       $match: {
-        year: year * 1,
+        year: 2025 * 1,
         day: {
           $gte: 1,
           $lte: currentMonth !== Number(month) ? 31 : day * 1,
         },
-        month: month * 1,
+        month: 2 * 1,
       },
     },
     {
@@ -297,6 +298,7 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
       },
     },
   ]);
+  console.log('monthlyMeals ', monthlyMeals)
   res.status(200).json({
     status: "Success",
     monthlyMeals,
@@ -342,6 +344,7 @@ exports.dailyMealCalc = catchAsyncError(async (req, res) => {
       },
     },
   ]);
+  console.log('monthlyMeals ', monthlyMeals)
   res.status(200).json({
     status: "Success",
     monthlyMeals,

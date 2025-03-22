@@ -22,11 +22,18 @@ const mealCountSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Must have a day"],
     },
+    // border: [
+    //   {
+    //     type: Object,
+    //     required: [true, "Must have a border"],
+    //   },
+    // ],
     border: [
       {
-        type: Object,
-        required: [true, "Must have a border"],
-      },
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+        required: [true, 'Meal must belong to at least one user']
+      }
     ],
     money: [
       {
