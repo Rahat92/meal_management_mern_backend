@@ -13,8 +13,8 @@ const {
 const { protect, restrictedTo } = require("../controllers/userController");
 const router = express.Router();
 
-router.route("/").post(protect, createMeal);
-router.route("/:month/:year").get(protect, getMonthMeals);
+router.route("/").post( createMeal);
+router.route("/:month/:year").get( getMonthMeals);
 router
   .route("/monthly-borders-stats/:year/:month/:day")
   .get(protect, getBorderMonthlyStats);

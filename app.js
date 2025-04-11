@@ -10,6 +10,7 @@ const mealCountRouter = require("./routes/mealCountRoutes");
 const yearMonthRouter = require("./routes/yearMonthRoutes");
 const conversationRouter = require("./routes/conversationRoutes");
 const messageRouter = require("./routes/messageRoutes");
+const foodRouter = require("./routes/foodRoutes");
 
 
 
@@ -20,6 +21,7 @@ app.use(cors({ origin: "*" }));
 app.use(cookieParser());
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/meal", mealCountRouter);
+app.use("/api/v1/foods", foodRouter);
 app.use("/api/v1/year-month", yearMonthRouter);
 app.use("/api/v1/conversations", conversationRouter);
 app.use("/api/v1/messages", messageRouter);

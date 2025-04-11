@@ -4,33 +4,72 @@ const YearMonthModel = require("../models/yearMonthModel");
 const AppError = require("../utils/AppError");
 const catchAsyncError = require("../utils/catchAsyncError");
 
+// exports.createMeal = catchAsyncError(async (req, res) => {
+//   const users = await User.find();
+//   const borders = users.filter((user) => user.role !== "superadmin");
+//   const body = req.body.map((el) => {
+//     return {
+//       ...el,
+//       border: borders,
+//       customers: borders.map(el => el._id),
+//       money: Array(borders.length).fill(0),
+//       shop: Array(borders.length).fill(0),
+//       extraShop: Array(borders.length).fill(0),
+//       breakfast: Array(borders.length).fill([0, "on", "admin", 'default']),
+//       launch: Array(borders.length).fill([1, "on", "admin", 'default']),
+//       dinner: Array(borders.length).fill([1, "on", "admin", 'default']),
+//     };
+//   });
+//   console.log(body)
+//   const yearMonth = await YearMonthModel.create({
+//     year: req.body[0].year,
+//     month: req.body[0].month,
+//   });
+//   const meal = await Meal.create(body);
+//   res.status(201).json({
+//     status: "Success",
+//     meal,
+//   });
+// });
 exports.createMeal = catchAsyncError(async (req, res) => {
-  const users = await User.find();
+  // Ensure req.body is an array
+  if (!Array.isArray(req.body)) {
+    return res.status(400).json({ status: "Fail", message: "Invalid input format" });
+  }
+
+  // Fetch users and filter non-superadmin borders
+  const users = await User.find({}, "_id role"); // Only fetch `_id` and `role` for optimization
   const borders = users.filter((user) => user.role !== "superadmin");
-  const body = req.body.map((el) => {
-    return {
-      ...el,
-      border: borders,
-      customers: borders.map(el => el._id),
-      money: Array(borders.length).fill(0),
-      shop: Array(borders.length).fill(0),
-      extraShop: Array(borders.length).fill(0),
-      breakfast: Array(borders.length).fill([0, "on", "admin"]),
-      launch: Array(borders.length).fill([1, "on", "admin"]),
-      dinner: Array(borders.length).fill([1, "on", "admin"]),
-    };
-  });
-  console.log(body)
-  const yearMonth = await YearMonthModel.create({
-    year: req.body[0].year,
-    month: req.body[0].month,
-  });
+  const borderIds = borders.map(user => user._id);
+
+  // Process meal data
+  const body = req.body.map((el) => ({
+    ...el,
+    border: borderIds, // Store only user IDs instead of full objects
+    money: borderIds.map(() => 0), // Create independent arrays
+    shop: borderIds.map(() => 0),
+    extraShop: borderIds.map(() => 0),
+    breakfast: borderIds.map(() => [0, "on", "admin", "default"]),
+    launch: borderIds.map(() => [1, "on", "admin", "default"]),
+    dinner: borderIds.map(() => [1, "on", "admin", "default"]),
+  }));
+
+  // Upsert YearMonth entry
+  await YearMonthModel.findOneAndUpdate(
+    { year: req.body[0].year, month: req.body[0].month },
+    { $setOnInsert: { year: req.body[0].year, month: req.body[0].month } },
+    { upsert: true, new: true }
+  );
+
+  // Create meal entries
   const meal = await Meal.create(body);
+
   res.status(201).json({
     status: "Success",
     meal,
   });
 });
+
 
 exports.getMonthMeals = catchAsyncError(async (req, res) => {
   const monthlyMeals = await Meal.find({
@@ -72,7 +111,7 @@ exports.updatePersonFullMeal = catchAsyncError(async (req, res, next) => {
 
   if (
     new Date() >
-      new Date(req.body.year, req.body.month, req.body.day, 6, 0, 0) &&
+    new Date(req.body.year, req.body.month, req.body.day, 6, 0, 0) &&
     req.user.role !== "admin" &&
     req.user.role !== "superadmin"
   ) {
@@ -130,6 +169,7 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
   }
   const meal = await Meal.findById(req.params.id);
   const existingMeal = [...meal[req.body.mealName]];
+  console.log('existing meal, ', meal[req.body.mealName])
   if (
     existingMeal[req.body.mealIndex][2] === "user" &&
     req.user.role === "admin"
@@ -146,10 +186,9 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
         "This meal is setted by user.Therefore Admin can not update this meal.",
     });
   }
-  const personMeal = (existingMeal[req.body.mealIndex] =
-    req.body[req.body.mealName][req.body.mealIndex]);
-  personMeal[2] =
-    personMeal[0] === 0 && personMeal[1] === "on" ? "admin" : req.user.role;
+  const personMeal = (existingMeal[req.body.mealIndex] = req.body[req.body.mealName][req.body.mealIndex]);
+  console.log('existing', req.body[req.body.mealName][req.body.mealIndex])
+  personMeal[2] = personMeal[0] === 0 && personMeal[1] === "on" ? "admin" : req.user.role;
   meal[req.body.mealName] = existingMeal;
   await meal.save();
   res.status(200).json({
@@ -157,6 +196,48 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
     meal,
   });
 });
+exports.setMyFood = catchAsyncError(async (req, res, next) => {
+  if (
+    req.body.mealIndex !== req.body.userIndex &&
+    req.user.role !== "admin" &&
+    req.user.role !== "superadmin" &&
+    req.user.role !== "admin"
+  ) {
+    // return next(new AppError("You only can update your meal", 400));
+    return res.status(400).json({
+      status: "Fail",
+      message: "You only can update your meal",
+    });
+  }
+  const meal = await Meal.findById(req.params.id);
+  const existingMeal = [...meal[req.body.mealName]];
+  if (
+    existingMeal[req.body.mealIndex][2] === "user" &&
+    req.user.role === "admin"
+  ) {
+    // return next(
+    //   new AppError(
+    //     "This meal is setted by user.Therefore Admin can not update this meal.",
+    //     400
+    //   )
+    // );
+    return res.status(400).json({
+      status: "Fail",
+      message:
+        "This meal is setted by user.Therefore Admin can not update this meal.",
+    });
+  }
+  const personMeal = (existingMeal[req.body.mealIndex] = req.body[req.body.mealName][req.body.mealIndex]);
+  console.log('existing', req.body[req.body.mealName][req.body.mealIndex])
+  personMeal[2] = personMeal[0] === 0 && personMeal[1] === "on" ? "admin" : req.user.role;
+  meal[req.body.mealName] = existingMeal;
+  await meal.save();
+  res.status(200).json({
+    status: "Success",
+    meal,
+  });
+});
+
 exports.updateMoney = catchAsyncError(async (req, res, next) => {
   if (req.user.role !== "admin" && req.user.role !== "superadmin") {
     // return next(
@@ -352,9 +433,9 @@ exports.dailyMealCalc = catchAsyncError(async (req, res) => {
 });
 
 
-exports.deleteAMonth = catchAsyncError(async (req,res,next) => {
+exports.deleteAMonth = catchAsyncError(async (req, res, next) => {
   await Meal.deleteMany({
-    month:1,
-    year:2025
+    month: 1,
+    year: 2025
   })
 })
