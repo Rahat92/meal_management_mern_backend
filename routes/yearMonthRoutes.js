@@ -1,6 +1,6 @@
 const express = require("express");
 const { createYearMonth, getAllYearMonth,getYearMonth,deleteYearMonth } = require("../controllers/yearMonthController");
-const { deleteAMonth } = require("../controllers/mealCountController");
+const { deleteAMonth } = require("../controllers/v1/mealCountController");
 
 const router = express.Router();
 

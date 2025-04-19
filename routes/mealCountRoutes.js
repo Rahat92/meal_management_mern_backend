@@ -9,7 +9,9 @@ const {
   updateMoney,
   updateShopMoney,
   updateExtraShopMoney,
-} = require("../controllers/mealCountController");
+  updateLunch,
+  update_dinner,
+} = require("../controllers/v1/mealCountController");
 const { protect, restrictedTo } = require("../controllers/userController");
 const router = express.Router();
 
@@ -22,6 +24,8 @@ router
   .route("/update-person-full-meal/:id")
   .patch(protect, updatePersonFullMeal);
 router.route("/update-my-meal/:id").patch(protect, setMyMealStatus);
+router.route("/update-lunch/:id").patch(updateLunch)
+router.route("/update-dinner/:id").patch(update_dinner)
 router.route("/update-border-money/:id").patch(protect, updateMoney);
 router.route("/update-shop-money/:id").patch(protect, updateShopMoney);
 router

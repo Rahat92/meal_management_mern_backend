@@ -11,6 +11,7 @@ const yearMonthRouter = require("./routes/yearMonthRoutes");
 const conversationRouter = require("./routes/conversationRoutes");
 const messageRouter = require("./routes/messageRoutes");
 const foodRouter = require("./routes/foodRoutes");
+const mealRouter = require("./routes/mealRoutes");
 
 
 
@@ -25,6 +26,10 @@ app.use("/api/v1/foods", foodRouter);
 app.use("/api/v1/year-month", yearMonthRouter);
 app.use("/api/v1/conversations", conversationRouter);
 app.use("/api/v1/messages", messageRouter);
+
+
+app.use("/api/v2/meal", mealRouter)
+
 app.all("*", (req, res, next) => {
   next(new AppError("No route defined by this url", 400));
 });

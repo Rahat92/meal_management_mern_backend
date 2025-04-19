@@ -1,5 +1,5 @@
-const Food = require("../models/foodModel");
-const catchAsyncError = require("../utils/catchAsyncError");
+const Food = require("../../models/foodModel");
+const catchAsyncError = require("../../utils/catchAsyncError");
 
 exports.createFood = catchAsyncError(async(req, res) => {
     const {name} = req.body;

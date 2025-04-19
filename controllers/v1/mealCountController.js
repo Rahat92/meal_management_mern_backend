@@ -1,8 +1,8 @@
-const Meal = require("../models/mealCountModel");
-const User = require("../models/userModel");
-const YearMonthModel = require("../models/yearMonthModel");
-const AppError = require("../utils/AppError");
-const catchAsyncError = require("../utils/catchAsyncError");
+const Meal = require("../../models/mealCountModel");
+const User = require("../../models/userModel");
+const YearMonthModel = require("../../models/yearMonthModel");
+const AppError = require("../../utils/AppError");
+const catchAsyncError = require("../../utils/catchAsyncError");
 
 // exports.createMeal = catchAsyncError(async (req, res) => {
 //   const users = await User.find();
@@ -92,6 +92,27 @@ exports.updateMeal = catchAsyncError(async (req, res) => {
     meal,
   });
 });
+
+exports.updateLunch = catchAsyncError(async (req, res) => {
+  const lunch = await Meal.updateOne(
+    { _id: req.params.id },
+    { $set: { [`launch.${req.body.borderIndex}`]: req.body.lunch } }
+  )
+  res.status(200).json({
+    status: 'Success',
+    lunch: lunch
+  })
+})
+exports.update_dinner = catchAsyncError(async (req, res) => {
+  const dinner = await Meal.updateOne(
+    { _id: req.params.id },
+    { $set: { [`dinner.${req.body.borderIndex}`]: req.body.dinner } }
+  )
+  res.status(200).json({
+    status: 'Success',
+    dinner: dinner
+  })
+})
 
 exports.updatePersonFullMeal = catchAsyncError(async (req, res, next) => {
   const { requestTime } = req.body;
@@ -252,11 +273,14 @@ exports.updateMoney = catchAsyncError(async (req, res, next) => {
         "You have no permisson to update your balance, only admin can do this",
     });
   }
-  const meal = await Meal.findById(req.body.id);
-  const copyBorderMoneyArr = [...meal.money];
-  copyBorderMoneyArr[req.body.borderIndex] = req.body.money;
-  meal.money = copyBorderMoneyArr;
-  await meal.save();
+
+  const meal = await Meal.updateOne(
+    { _id: req.body.id },
+    { $set: { [`money.${req.body.borderIndex}`]: req.body.money } },
+    { new: true }
+  )
+
+  // await meal.save();
   res.status(200).json({
     status: "Success",
     meal,
