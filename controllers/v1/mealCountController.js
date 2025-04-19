@@ -190,7 +190,6 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
   }
   const meal = await Meal.findById(req.params.id);
   const existingMeal = [...meal[req.body.mealName]];
-  console.log('existing meal, ', meal[req.body.mealName])
   if (
     existingMeal[req.body.mealIndex][2] === "user" &&
     req.user.role === "admin"
@@ -208,7 +207,6 @@ exports.setMyMealStatus = catchAsyncError(async (req, res, next) => {
     });
   }
   const personMeal = (existingMeal[req.body.mealIndex] = req.body[req.body.mealName][req.body.mealIndex]);
-  console.log('existing', req.body[req.body.mealName][req.body.mealIndex])
   personMeal[2] = personMeal[0] === 0 && personMeal[1] === "on" ? "admin" : req.user.role;
   meal[req.body.mealName] = existingMeal;
   await meal.save();
@@ -249,7 +247,6 @@ exports.setMyFood = catchAsyncError(async (req, res, next) => {
     });
   }
   const personMeal = (existingMeal[req.body.mealIndex] = req.body[req.body.mealName][req.body.mealIndex]);
-  console.log('existing', req.body[req.body.mealName][req.body.mealIndex])
   personMeal[2] = personMeal[0] === 0 && personMeal[1] === "on" ? "admin" : req.user.role;
   meal[req.body.mealName] = existingMeal;
   await meal.save();
@@ -403,7 +400,6 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
       },
     },
   ]);
-  console.log('monthlyMeals ', monthlyMeals)
   res.status(200).json({
     status: "Success",
     monthlyMeals,
@@ -449,7 +445,6 @@ exports.dailyMealCalc = catchAsyncError(async (req, res) => {
       },
     },
   ]);
-  console.log('monthlyMeals ', monthlyMeals)
   res.status(200).json({
     status: "Success",
     monthlyMeals,
