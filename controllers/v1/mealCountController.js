@@ -70,6 +70,29 @@ exports.createMeal = catchAsyncError(async (req, res) => {
   });
 });
 
+exports.updateStoreLunch = catchAsyncError(async (req, res) => {
+  // Step 1: Find the document
+  const meal = await Meal.findById(req.params.id);
+
+  // Step 2: Access the nested array safely
+  const innerArray = meal.launch?.[req.body.borderIndex];
+
+  await Meal.updateOne(
+    { _id: req.params.id },
+    { $set: { [`launch.1.3`]: 'yourNewValue' } }
+  );
+  if (innerArray && innerArray[3] === 'default') {
+    // Step 3: Update only if it is still 'default'
+
+    console.log('Value was default, updated!');
+  } else {
+    console.log('Already modified, skipping...');
+  }
+  res.status(200).json({
+    status:'Success',
+    message:'meal update successfully'
+  })
+})
 
 exports.getMonthMeals = catchAsyncError(async (req, res) => {
   const monthlyMeals = await Meal.find({
