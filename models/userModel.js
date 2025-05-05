@@ -33,10 +33,20 @@ const userSchema = new mongoose.Schema({
       message: "Password not matched!",
     },
   },
+  manager: {
+    type: mongoose.Schema.ObjectId,
+    ref:'User',
+    // required: [true, "Must have a meal manager"],
+  },
   passwordResetToken: String,
   passwordResetTokenExpires: Date,
   passwordChangeAt: Date,
-});
+},
+  {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
 
 userSchema.pre("save", function (next) {
   if (!this.isModified("password") || this.isNew) return next();

@@ -4,7 +4,6 @@ const mealCountSchema = new mongoose.Schema(
     date: {
       type: String,
       required: [true, "Must have a date"],
-      unique: true,
     },
     month: {
       type: Number,
@@ -12,6 +11,7 @@ const mealCountSchema = new mongoose.Schema(
     },
     mealManager: {
       type: mongoose.Schema.ObjectId,
+      ref: 'User',
       required: [true, "Must have a meal manager"],
     },
     year: {
@@ -80,6 +80,7 @@ const mealCountSchema = new mongoose.Schema(
   }
 );
 
+mealCountSchema.index({date: 1, mealManager: 1}, {unique: true})
 const Meal = mongoose.model("MessMeal", mealCountSchema);
 
 module.exports = Meal;

@@ -1,5 +1,5 @@
 const express = require('express');
-const { signUp, logIn, protect, logOut, getBorders, sendMessage, forgotPassword } = require('../controllers/userController');
+const { signUp, logIn, protect, logOut, getBorders, sendMessage, forgotPassword, getBorder } = require('../controllers/userController');
 const router = express.Router();
 
 router
@@ -11,6 +11,7 @@ router
 router
     .route('/')
     .get(getBorders)
+
 router
     .route('/send-message')
     .post(sendMessage)
@@ -19,6 +20,11 @@ router
     .get(logOut)
 router
     .route('/forgot-password')
-    .post(forgotPassword)
+    .post(forgotPassword)    
+
+router
+    .route('/:id')
+    .get(getBorder)
+
 const userRouter = router;
 module.exports = userRouter

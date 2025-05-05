@@ -12,12 +12,13 @@ const {
   updateLunch,
   update_dinner,
   updateStoreLunch,
+  updateLunchMenu,
 } = require("../controllers/v1/mealCountController");
 const { protect, restrictedTo } = require("../controllers/userController");
 const router = express.Router();
 
-router.route("/").post( createMeal);
-router.route("/:month/:year").get( getMonthMeals);
+router.route("/").post(protect,restrictedTo('admin'), createMeal);
+router.route("/:month/:year").get( protect, getMonthMeals);
 router
   .route("/monthly-borders-stats/:year/:month/:day")
   .get(protect, getBorderMonthlyStats);
@@ -27,6 +28,7 @@ router
 router.route("/update-my-meal/:id").patch(protect, setMyMealStatus);
 router.route("/update-store/:id").patch( updateStoreLunch);
 router.route("/update-lunch/:id").patch(updateLunch)
+router.route("/update-lunch-menu/:id").patch(updateLunchMenu)
 router.route("/update-dinner/:id").patch(update_dinner)
 router.route("/update-border-money/:id").patch(protect, updateMoney);
 router.route("/update-shop-money/:id").patch(protect, updateShopMoney);

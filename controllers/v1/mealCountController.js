@@ -1,3 +1,4 @@
+const { default: mongoose } = require("mongoose");
 const Meal = require("../../models/mealCountModel");
 const User = require("../../models/userModel");
 const YearMonthModel = require("../../models/yearMonthModel");
@@ -38,7 +39,9 @@ exports.createMeal = catchAsyncError(async (req, res) => {
   }
 
   // Fetch users and filter non-superadmin borders
-  const users = await User.find({}, "_id role"); // Only fetch `_id` and `role` for optimization
+  const users = await User.find({
+    $or: [{ manager: req.user._id }, { _id: req.user._id }]
+  }, "_id role");
   const borders = users.filter((user) => user.role !== "superadmin");
   const borderIds = borders.map(user => user._id);
 
@@ -46,6 +49,7 @@ exports.createMeal = catchAsyncError(async (req, res) => {
   const body = req.body.map((el) => ({
     ...el,
     border: borderIds, // Store only user IDs instead of full objects
+    mealManager: req.user._id,
     money: borderIds.map(() => 0), // Create independent arrays
     shop: borderIds.map(() => 0),
     extraShop: borderIds.map(() => 0),
@@ -56,8 +60,8 @@ exports.createMeal = catchAsyncError(async (req, res) => {
 
   // Upsert YearMonth entry
   await YearMonthModel.findOneAndUpdate(
-    { year: req.body[0].year, month: req.body[0].month },
-    { $setOnInsert: { year: req.body[0].year, month: req.body[0].month } },
+    { year: req.body[0].year, month: req.body[0].month, manager: req.user._id },
+    { $setOnInsert: { year: req.body[0].year, month: req.body[0].month, manager: req.user._id } },
     { upsert: true, new: true }
   );
 
@@ -89,16 +93,20 @@ exports.updateStoreLunch = catchAsyncError(async (req, res) => {
     console.log('Already modified, skipping...');
   }
   res.status(200).json({
-    status:'Success',
-    message:'meal update successfully'
+    status: 'Success',
+    message: 'meal update successfully'
   })
 })
 
 exports.getMonthMeals = catchAsyncError(async (req, res) => {
+  console.log(req.user.manager)
   const monthlyMeals = await Meal.find({
     month: req.params.month,
     year: req.params.year,
+    mealManager: req.user.role === 'admin' ? req.user._id : req.user.manager._id
+    // mealManager: req.user.magager,
   }).populate('border');
+
   res.status(200).json({
     status: "Success",
     month: req.params.month,
@@ -126,6 +134,20 @@ exports.updateLunch = catchAsyncError(async (req, res) => {
     lunch: lunch
   })
 })
+
+exports.updateLunchMenu = catchAsyncError(async (req, res) => {
+  const lunch = await Meal.updateOne(
+    { _id: req.params.id },
+    { $set: { [`launch.${req.body.borderIndex}.3`]: req.body.lunch } }
+  )
+  res.status(200).json({
+    status: 'Success',
+    lunch: lunch
+  })
+})
+
+
+
 exports.update_dinner = catchAsyncError(async (req, res) => {
   const dinner = await Meal.updateOne(
     { _id: req.params.id },
@@ -358,6 +380,7 @@ exports.updateExtraShopMoney = catchAsyncError(async (req, res, next) => {
 });
 
 exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
+  const user = req.user;
   const { month, year, day } = req.params;
   const currentMonth = new Date().getMonth();
   const monthlyMeals = await Meal.aggregate([
@@ -369,6 +392,7 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
           $lte: currentMonth !== Number(month) ? 31 : day * 1,
         },
         month: month * 1,
+        mealManager: mongoose.Types.ObjectId(user.role === 'admin'?user._id:user.manager._id)
       },
     },
     {

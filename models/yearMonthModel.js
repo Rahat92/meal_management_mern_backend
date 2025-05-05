@@ -5,10 +5,15 @@ const yearMonthSchema = new mongoose.Schema({
     },
     month:{
         type:Number
+    },
+    manager: {
+        type: mongoose.Schema.ObjectId,
+        ref:'User',
+        required: ['Must have a manager']
     }
 })
 
-yearMonthSchema.index({year:1,month:1},{unique:true})
+yearMonthSchema.index({year:1,month:1, manager:1},{unique:true})
 const YearMonthModel = mongoose.model('YearMonth',yearMonthSchema);
 
 module.exports = YearMonthModel;

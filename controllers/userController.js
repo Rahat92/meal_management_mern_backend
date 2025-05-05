@@ -45,7 +45,7 @@ exports.protect = catchAsyncError(async (req, res, next) => {
     });
   }
   const decoded = await promisify(jwt.verify)(token, process.env.SECRET_KEY);
-  const currentUser = await User.findById(decoded.id);
+  const currentUser = await User.findById(decoded.id).populate('manager');
   if (!currentUser) {
     // return next(
     //   new AppError(`The user belonging this token is no longer exist`, 400)
@@ -88,7 +88,7 @@ exports.restrictedTo = (...roles) => {
 };
 
 exports.signUp = catchAsyncError(async (req, res, next) => {
-  const { name, email, password, passwordConfirm } = req.body;
+  const { name, email, password, passwordConfirm, manager } = req.body;
   console.log(password, passwordConfirm)
   if (password !== passwordConfirm) {
     // return next(
@@ -104,6 +104,7 @@ exports.signUp = catchAsyncError(async (req, res, next) => {
     email,
     password,
     passwordConfirm,
+    manager
   });
   const currentMonthMeals = await Meal.find({ month: 0, year: 2025 });
   currentMonthMeals.map(async (el, i) => {
@@ -167,6 +168,14 @@ exports.getBorders = catchAsyncError(async (req, res) => {
   res.status(200).json({
     status: "Success",
     borders,
+  });
+});
+
+exports.getBorder = catchAsyncError(async (req, res) => {
+  const border = await User.findById(req.params.id).populate('manager');
+  res.status(200).json({
+    status: "Success",
+    border,
   });
 });
 exports.logOut = catchAsyncError(async (req, res, next) => {

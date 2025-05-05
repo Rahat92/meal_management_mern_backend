@@ -1,13 +1,14 @@
 const express = require("express");
 const { createYearMonth, getAllYearMonth,getYearMonth,deleteYearMonth } = require("../controllers/yearMonthController");
 const { deleteAMonth } = require("../controllers/v1/mealCountController");
+const { protect, restrictedTo } = require("../controllers/userController");
 
 const router = express.Router();
 
 router
     .route('/')
-    .post(createYearMonth)
-    .get(getAllYearMonth)
+    .post(protect, restrictedTo('admin'), createYearMonth)
+    .get(protect, getAllYearMonth)
 router
     .route('/:id')
     .get(getYearMonth)
