@@ -134,6 +134,16 @@ exports.updateLunch = catchAsyncError(async (req, res) => {
     lunch: lunch
   })
 })
+exports.updateBreakfast = catchAsyncError(async (req, res) => {
+  const lunch = await Meal.updateOne(
+    { _id: req.params.id },
+    { $set: { [`breakfast.${req.body.borderIndex}`]: req.body.breakfast } }
+  )
+  res.status(200).json({
+    status: 'Success',
+    lunch: lunch
+  })
+})
 
 exports.updateLunchMenu = catchAsyncError(async (req, res) => {
   const lunch = await Meal.updateOne(

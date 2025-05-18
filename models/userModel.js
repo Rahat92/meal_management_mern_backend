@@ -33,6 +33,10 @@ const userSchema = new mongoose.Schema({
       message: "Password not matched!",
     },
   },
+  morningMealCount: {
+    type: Number,
+    // default: .5
+  },
   manager: {
     type: mongoose.Schema.ObjectId,
     ref:'User',

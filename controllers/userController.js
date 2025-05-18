@@ -88,7 +88,7 @@ exports.restrictedTo = (...roles) => {
 };
 
 exports.signUp = catchAsyncError(async (req, res, next) => {
-  const { name, email, password, passwordConfirm, manager } = req.body;
+  const { name, email, password, passwordConfirm, manager, morningMealCount } = req.body;
   console.log(password, passwordConfirm)
   if (password !== passwordConfirm) {
     // return next(
@@ -104,7 +104,8 @@ exports.signUp = catchAsyncError(async (req, res, next) => {
     email,
     password,
     passwordConfirm,
-    manager
+    manager,
+    morningMealCount
   });
   const currentMonthMeals = await Meal.find({ month: 0, year: 2025 });
   currentMonthMeals.map(async (el, i) => {
@@ -158,7 +159,7 @@ exports.logIn = catchAsyncError(async (req, res, next) => {
   const { email, password } = req.body;
   if (!email || !password)
     return next(new AppError(`Please Provide Email and Password`, 400));
-  const user = await User.findOne({ email }).select("+password");
+  const user = await User.findOne({ email }).select("+password").populate('manager');
   if (!user || !(await user.isPasswordMatched(password)))
     return next(new AppError(`Invalid email or password!`, 400));
   resAndSendToken(user, res, 200);
