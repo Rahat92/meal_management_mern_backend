@@ -2,10 +2,10 @@ const client = require("twilio")(
   "ACe0ab0de1faa22a08fe1fdd4f77e09337",
   "a84563bd40f8b30198921f37b742c9f1"
 );
-const Meal = require("../models/mealCountModel");
-const User = require("../models/userModel");
-const AppError = require("../utils/AppError");
-const catchAsyncError = require("../utils/catchAsyncError");
+const Meal = require("../../models/mealCountModel");
+const User = require("../../models/userModel");
+const AppError = require("../../utils/AppError");
+const catchAsyncError = require("../../utils/catchAsyncError");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const { promisify } = require("util");

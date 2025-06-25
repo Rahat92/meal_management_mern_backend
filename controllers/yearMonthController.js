@@ -34,7 +34,8 @@ exports.deleteYearMonth = catchAsync(async (req, res) => {
   await YearMonth.findByIdAndDelete(req.params.id);
   await Meal.deleteMany({
     month: Number(month),
-    year: Number(year)
+    year: Number(year),
+    manager: req.user.role === 'admin' ? req.user._id : req.user.manager._id
   })
   res.status(204).json({
     status: "Success",

@@ -3,7 +3,7 @@ const {
   createConversation,
   getConversations,
 } = require("../controllers/conversationController");
-const { protect } = require("../controllers/userController");
+const { protect } = require("../controllers/v1/authController");
 const router = express.Router();
 
 router.route("/").post(createConversation);

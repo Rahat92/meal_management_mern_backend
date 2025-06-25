@@ -15,7 +15,7 @@ const {
   updateLunchMenu,
   updateBreakfast,
 } = require("../controllers/v1/mealCountController");
-const { protect, restrictedTo } = require("../controllers/userController");
+const { protect, restrictedTo } = require("../controllers/v1/authController");
 const router = express.Router();
 
 router.route("/").post(protect,restrictedTo('admin'), createMeal);
