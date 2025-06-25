@@ -4,7 +4,6 @@ const Meal = require("../../models/newMealModel");
 
 // Create a new meal document for the day
 exports.createMeal = async (req, res) => {
-    console.log('hello world')
     try {
         const {
             date,

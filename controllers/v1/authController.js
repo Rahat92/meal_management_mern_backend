@@ -32,7 +32,8 @@ const resAndSendToken = (user, res, statusCode) => {
 exports.protect = catchAsyncError(async (req, res, next) => {
   // const { token } = req.cookies;
   let token;
-  if (req.headers.authorization.startsWith("Bearer")) {
+  console.log('hiih ',req.headers.authorization);
+  if (req.headers?.authorization?.startsWith("Bearer")) {
     token = req.headers.authorization.split(" ")[1];
   }
   if (!token) {
@@ -55,19 +56,19 @@ exports.protect = catchAsyncError(async (req, res, next) => {
       message: "The user belonging this token is no longer exist",
     });
   }
-  if (currentUser.isPasswordChanged(decoded.iat)) {
-    // return next(
-    //   new AppError(
-    //     `The user changed password after issuing this  token, Please log in again`,
-    //     400
-    //   )
-    // );
-    return res.status(401).json({
-      status: "fail",
-      message:
-        "The user changed password after issuing this  token, Please log in again",
-    });
-  }
+  // if (currentUser.isPasswordChanged(decoded.iat)) {
+  //   // return next(
+  //   //   new AppError(
+  //   //     `The user changed password after issuing this  token, Please log in again`,
+  //   //     400
+  //   //   )
+  //   // );
+  //   return res.status(401).json({
+  //     status: "fail",
+  //     message:
+  //       "The user changed password after issuing this  token, Please log in again",
+  //   });
+  // }
   req.user = currentUser;
   next();
 });

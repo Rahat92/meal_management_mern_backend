@@ -12,6 +12,6 @@ router
 router
     .route('/:id')
     .get(getYearMonth)
-    .delete(deleteYearMonth)
+    .delete(protect, deleteYearMonth)
 
 module.exports = router;
