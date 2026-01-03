@@ -40,7 +40,8 @@ exports.createMeal = catchAsyncError(async (req, res) => {
 
   // Fetch users and filter non-superadmin borders
   const users = await User.find({
-    $or: [{ manager: req.user._id }, { _id: req.user._id }]
+    $or: [{ manager: req.user._id }, { _id: req.user._id }],
+    active: true
   }, "_id role");
   const borders = users.filter((user) => user.role !== "superadmin");
   const borderIds = borders.map(user => user._id);
@@ -52,8 +53,10 @@ exports.createMeal = catchAsyncError(async (req, res) => {
     mealManager: req.user._id,
     money: borderIds.map(() => 0), // Create independent arrays
     shop: borderIds.map(() => 0),
+    shoppingComments: borderIds.map((id)=> ({user:id, comment:''})),
     extraShop: borderIds.map(() => 0),
-    breakfast: borderIds.map(() => [0, "on", "admin", "default"]),
+    extraShoppingComments: borderIds.map((id)=> ({user:id, comment:''})),
+    breakfast: borderIds.map(() => [.5, "on", "admin", "default"]),
     launch: borderIds.map(() => [1, "on", "admin", "default"]),
     dinner: borderIds.map(() => [1, "on", "admin", "default"]),
   }));
@@ -99,7 +102,6 @@ exports.updateStoreLunch = catchAsyncError(async (req, res) => {
 })
 
 exports.getMonthMeals = catchAsyncError(async (req, res) => {
-  console.log(req.user.manager)
   const monthlyMeals = await Meal.find({
     month: req.params.month,
     year: req.params.year,
@@ -396,7 +398,7 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
   const monthlyMeals = await Meal.aggregate([
     {
       $match: {
-        year: 2025 * 1,
+        year: 2026 * 1,
         day: {
           $gte: 1,
           $lte: currentMonth !== Number(month) ? 31 : day * 1,

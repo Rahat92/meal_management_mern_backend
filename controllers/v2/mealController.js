@@ -61,7 +61,7 @@ exports.createMeal = async (req, res) => {
 
 exports.updateUserLunch = async (req, res) => {
     // const { date } = req.params;
-    const date = '2025-04-18';
+    const date = '2026-01-18';
     // const userId = req.user._id;
     const userId = '661f3b4e2f41d2530aa6e330';
     const { items, note } = req.body;

@@ -43,11 +43,47 @@ const mealCountSchema = new mongoose.Schema(
     shop: [
       {
         type: Number,
+      },
+    ],
+    shoppingComments: [
+      {
+        user: {
+          type: mongoose.Schema.ObjectId,
+          ref: 'User',
+          required: true
+
+        },
+        comment: {
+          type: String,
+          default: '',
+          trim: true
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now
+        }
       }
     ],
     extraShop: [
       {
         type: Number,
+      }
+    ],
+    extraShoppingComments: [
+      {
+        user: {
+          type: mongoose.Schema.ObjectId,
+          ref: 'User'
+        },
+        comment: {
+          type: String,
+          default: '',
+          trim: true
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now
+        }
       }
     ],
     breakfast: [
@@ -80,7 +116,7 @@ const mealCountSchema = new mongoose.Schema(
   }
 );
 
-mealCountSchema.index({date: 1, mealManager: 1}, {unique: true})
+mealCountSchema.index({ date: 1, mealManager: 1 }, { unique: true })
 const Meal = mongoose.model("MessMeal", mealCountSchema);
 
 module.exports = Meal;

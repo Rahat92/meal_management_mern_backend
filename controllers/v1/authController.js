@@ -32,7 +32,7 @@ const resAndSendToken = (user, res, statusCode) => {
 exports.protect = catchAsyncError(async (req, res, next) => {
   // const { token } = req.cookies;
   let token;
-  console.log('hiih ',req.headers.authorization);
+  console.log(req.headers.authorization);
   if (req.headers?.authorization?.startsWith("Bearer")) {
     token = req.headers.authorization.split(" ")[1];
   }
@@ -48,6 +48,7 @@ exports.protect = catchAsyncError(async (req, res, next) => {
   const decoded = await promisify(jwt.verify)(token, process.env.SECRET_KEY);
   const currentUser = await User.findById(decoded.id).populate('manager');
   if (!currentUser) {
+    
     // return next(
     //   new AppError(`The user belonging this token is no longer exist`, 400)
     // );
@@ -90,7 +91,9 @@ exports.restrictedTo = (...roles) => {
 
 exports.signUp = catchAsyncError(async (req, res, next) => {
   const { name, email, password, passwordConfirm, manager, morningMealCount } = req.body;
-  console.log(password, passwordConfirm)
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
   if (password !== passwordConfirm) {
     // return next(
     //   new AppError(`Password and Confirm Password doesn't match`, 400)
@@ -108,7 +111,7 @@ exports.signUp = catchAsyncError(async (req, res, next) => {
     manager,
     morningMealCount
   });
-  const currentMonthMeals = await Meal.find({ month: 0, year: 2025 });
+  const currentMonthMeals = await Meal.find({ month: currentMonth, year: currentYear });
   currentMonthMeals.map(async (el, i) => {
     const borders = [...el.border, user];
     const breakfasts = [...el.breakfast, [0, "on", "admin"]];
