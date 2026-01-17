@@ -514,6 +514,6 @@ exports.dailyMealCalc = catchAsyncError(async (req, res) => {
 exports.deleteAMonth = catchAsyncError(async (req, res, next) => {
   await Meal.deleteMany({
     month: 1,
-    year: 2025
+    year: 2026
   })
 })
