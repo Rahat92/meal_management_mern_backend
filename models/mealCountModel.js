@@ -53,11 +53,13 @@ const mealCountSchema = new mongoose.Schema(
           required: true
 
         },
-        comment: {
-          type: String,
-          default: '',
-          trim: true
-        },
+        comment: [
+          {
+            productName: String,
+            productCount: Number,
+            unitPrice: Number
+          }
+        ],
         createdAt: {
           type: Date,
           default: Date.now
@@ -75,11 +77,13 @@ const mealCountSchema = new mongoose.Schema(
           type: mongoose.Schema.ObjectId,
           ref: 'User'
         },
-        comment: {
-          type: String,
-          default: '',
-          trim: true
-        },
+        comment: [
+          {
+            productName: String,
+            productCount: Number,
+            unitPrice: Number
+          }
+        ],
         createdAt: {
           type: Date,
           default: Date.now

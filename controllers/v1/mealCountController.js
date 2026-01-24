@@ -53,9 +53,9 @@ exports.createMeal = catchAsyncError(async (req, res) => {
     mealManager: req.user._id,
     money: borderIds.map(() => 0), // Create independent arrays
     shop: borderIds.map(() => 0),
-    shoppingComments: borderIds.map((id)=> ({user:id, comment:''})),
+    shoppingComments: borderIds.map((id)=> ({user:id, comment:[]})),
     extraShop: borderIds.map(() => 0),
-    extraShoppingComments: borderIds.map((id)=> ({user:id, comment:''})),
+    extraShoppingComments: borderIds.map((id)=> ({user:id, comment:[]})),
     breakfast: borderIds.map(() => [.5, "on", "admin", "default"]),
     launch: borderIds.map(() => [1, "on", "admin", "default"]),
     dinner: borderIds.map(() => [1, "on", "admin", "default"]),
@@ -341,6 +341,8 @@ exports.updateMoney = catchAsyncError(async (req, res, next) => {
   });
 });
 exports.updateShopMoney = catchAsyncError(async (req, res, next) => {
+  console.log(req.body)
+  // return;
   if (req.user.role !== "admin" && req.user.role !== "superadmin") {
     // return next(
     //   new AppError(
@@ -357,8 +359,12 @@ exports.updateShopMoney = catchAsyncError(async (req, res, next) => {
   const meal = await Meal.findById(req.body.id);
 
   const copyBorderShopMoneyArr = [...meal.shop];
+  const copyBorderShopMoneyComment = [...meal.shoppingComments];
+  copyBorderShopMoneyComment[req.body.borderIndex].comment = req.body.shoppingComments;
+  copyBorderShopMoneyComment[req.body.borderIndex].user = req.body.customerId;
   copyBorderShopMoneyArr[req.body.borderIndex] = req.body.shop;
   meal.shop = copyBorderShopMoneyArr;
+  meal.shoppingComments = copyBorderShopMoneyComment
   await meal.save();
   res.status(200).json({
     status: "Success",
