@@ -53,6 +53,7 @@ exports.createMeal = catchAsyncError(async (req, res) => {
     mealManager: req.user._id,
     money: borderIds.map(() => 0), // Create independent arrays
     shop: borderIds.map(() => 0),
+    depositComment: borderIds.map((id)=> ({user:id, comment:[]})),
     shoppingComments: borderIds.map((id)=> ({user:id, comment:[]})),
     extraShop: borderIds.map(() => 0),
     extraShoppingComments: borderIds.map((id)=> ({user:id, comment:[]})),

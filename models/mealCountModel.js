@@ -45,6 +45,30 @@ const mealCountSchema = new mongoose.Schema(
         type: Number,
       },
     ],
+    depositComment: [
+      {
+        user: {
+          type: mongoose.Schema.ObjectId,
+          ref: 'User',
+          required: true
+
+        },
+        comment: [
+          {
+            amount: Number,
+            reason: String,
+            createdAt: {
+              type: Date,
+              default: Date.now
+            }
+          }
+        ],
+        createdAt: {
+          type: Date,
+          default: Date.now
+        }
+      }
+    ],
     shoppingComments: [
       {
         user: {
