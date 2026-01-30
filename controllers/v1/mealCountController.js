@@ -53,10 +53,10 @@ exports.createMeal = catchAsyncError(async (req, res) => {
     mealManager: req.user._id,
     money: borderIds.map(() => 0), // Create independent arrays
     shop: borderIds.map(() => 0),
-    depositComment: borderIds.map((id)=> ({user:id, comment:[]})),
-    shoppingComments: borderIds.map((id)=> ({user:id, comment:[]})),
+    depositComment: borderIds.map((id) => ({ user: id, comment: [] })),
+    shoppingComments: borderIds.map((id) => ({ user: id, comment: [] })),
     extraShop: borderIds.map(() => 0),
-    extraShoppingComments: borderIds.map((id)=> ({user:id, comment:[]})),
+    extraShoppingComments: borderIds.map((id) => ({ user: id, comment: [] })),
     breakfast: borderIds.map(() => [.5, "on", "admin", "default"]),
     launch: borderIds.map(() => [1, "on", "admin", "default"]),
     dinner: borderIds.map(() => [1, "on", "admin", "default"]),
@@ -315,6 +315,7 @@ exports.setMyFood = catchAsyncError(async (req, res, next) => {
 });
 
 exports.updateMoney = catchAsyncError(async (req, res, next) => {
+  console.log(req.body)
   if (req.user.role !== "admin" && req.user.role !== "superadmin") {
     // return next(
     //   new AppError(
@@ -328,12 +329,17 @@ exports.updateMoney = catchAsyncError(async (req, res, next) => {
         "You have no permisson to update your balance, only admin can do this",
     });
   }
-
-  const meal = await Meal.updateOne(
-    { _id: req.body.id },
-    { $set: { [`money.${req.body.borderIndex}`]: req.body.money } },
+  const meal = await Meal.findByIdAndUpdate(
+    req.body.id,
+    {
+      $set: {
+        [`money.${req.body.borderIndex}`]: req.body.money,
+        [`depositComment.${req.body.borderIndex}`]: {comment:req.body.depositComment, user: req.body.customerId}
+      }
+    },
     { new: true }
   )
+
 
   // await meal.save();
   res.status(200).json({
@@ -387,8 +393,10 @@ exports.updateExtraShopMoney = catchAsyncError(async (req, res, next) => {
     });
   }
   const meal = await Meal.findById(req.body.id);
-
   const copyBorderExtraShopMoneyArr = [...meal.extraShop];
+  const copyBorderExtraShopCommentsArr = [...meal.extraShoppingComments];
+  copyBorderExtraShopCommentsArr[req.body.borderIndex].comment = req.body.extraShoppingComments;
+  copyBorderExtraShopCommentsArr[req.body.borderIndex].user = req.body.customerId;
   copyBorderExtraShopMoneyArr[req.body.borderIndex] = req.body.extraShop;
   meal.extraShop = copyBorderExtraShopMoneyArr;
   await meal.save();
@@ -411,7 +419,7 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
           $lte: currentMonth !== Number(month) ? 31 : day * 1,
         },
         month: month * 1,
-        mealManager: mongoose.Types.ObjectId(user.role === 'admin'?user._id:user.manager._id)
+        mealManager: mongoose.Types.ObjectId(user.role === 'admin' ? user._id : user.manager._id)
       },
     },
     {
