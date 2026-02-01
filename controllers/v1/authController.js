@@ -48,7 +48,7 @@ exports.protect = catchAsyncError(async (req, res, next) => {
   const decoded = await promisify(jwt.verify)(token, process.env.SECRET_KEY);
   const currentUser = await User.findById(decoded.id).populate('manager');
   if (!currentUser) {
-    
+
     // return next(
     //   new AppError(`The user belonging this token is no longer exist`, 400)
     // );
@@ -113,11 +113,16 @@ exports.signUp = catchAsyncError(async (req, res, next) => {
   });
   const currentMonthMeals = await Meal.find({ month: currentMonth, year: currentYear });
   currentMonthMeals.map(async (el, i) => {
+    console.log(el)
     const borders = [...el.border, user];
     const breakfasts = [...el.breakfast, [0, "on", "admin"]];
     const launchs = [...el.launch, [1, "on", "admin"]];
     const dinners = [...el.dinner, [1, "on", "admin"]];
     const shops = [...el.shop, 0];
+    const depositComments = [...el.depositComment, { user: user._id, comment: [], createdAt: Date.now() }];
+    const shoppingComments = [...el.shoppingComments, { user: user._id, comment: [], createdAt: Date.now() }];
+    const extraShoppingComments = [...el.extraShoppingComments, { user: user._id, comment: [], createdAt: Date.now() }];
+
     const extraShops = [...el.extraShop, 0];
     const moneys = [...el.money, 0];
     await Meal.findByIdAndUpdate(el._id, {
@@ -127,6 +132,9 @@ exports.signUp = catchAsyncError(async (req, res, next) => {
       dinner: dinners,
       shop: shops,
       money: moneys,
+      depositComment: depositComments,
+      shoppingComments,
+      extraShoppingComments,
       extraShop: extraShops
     });
   });
