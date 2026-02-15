@@ -80,7 +80,7 @@ const mealCountSchema = new mongoose.Schema(
         comment: [
           {
             productName: String,
-            productCount: Number,
+            productCount: String,
             unitPrice: Number
           }
         ],
@@ -104,8 +104,9 @@ const mealCountSchema = new mongoose.Schema(
         comment: [
           {
             productName: String,
-            productCount: Number,
-            unitPrice: Number
+            productCount: String,
+            unitPrice: Number, 
+            category: mongoose.Schema.Types.ObjectId
           }
         ],
         createdAt: {
