@@ -5,33 +5,6 @@ const YearMonthModel = require("../../models/yearMonthModel");
 const AppError = require("../../utils/AppError");
 const catchAsyncError = require("../../utils/catchAsyncError");
 
-// exports.createMeal = catchAsyncError(async (req, res) => {
-//   const users = await User.find();
-//   const borders = users.filter((user) => user.role !== "superadmin");
-//   const body = req.body.map((el) => {
-//     return {
-//       ...el,
-//       border: borders,
-//       customers: borders.map(el => el._id),
-//       money: Array(borders.length).fill(0),
-//       shop: Array(borders.length).fill(0),
-//       extraShop: Array(borders.length).fill(0),
-//       breakfast: Array(borders.length).fill([0, "on", "admin", 'default']),
-//       launch: Array(borders.length).fill([1, "on", "admin", 'default']),
-//       dinner: Array(borders.length).fill([1, "on", "admin", 'default']),
-//     };
-//   });
-//   console.log(body)
-//   const yearMonth = await YearMonthModel.create({
-//     year: req.body[0].year,
-//     month: req.body[0].month,
-//   });
-//   const meal = await Meal.create(body);
-//   res.status(201).json({
-//     status: "Success",
-//     meal,
-//   });
-// });
 exports.createMeal = catchAsyncError(async (req, res) => {
   // Ensure req.body is an array
   if (!Array.isArray(req.body)) {
@@ -334,7 +307,7 @@ exports.updateMoney = catchAsyncError(async (req, res, next) => {
     {
       $set: {
         [`money.${req.body.borderIndex}`]: req.body.money,
-        [`depositComment.${req.body.borderIndex}`]: {comment:req.body.depositComment, user: req.body.customerId}
+        [`depositComment.${req.body.borderIndex}`]: { comment: req.body.depositComment, user: req.body.customerId }
       }
     },
     { new: true }
