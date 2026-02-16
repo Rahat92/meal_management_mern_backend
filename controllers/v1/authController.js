@@ -111,33 +111,34 @@ exports.signUp = catchAsyncError(async (req, res, next) => {
     manager,
     morningMealCount
   });
-  const currentMonthMeals = await Meal.find({ month: currentMonth, year: currentYear });
-  currentMonthMeals.map(async (el, i) => {
-    console.log(el)
-    const borders = [...el.border, user];
-    const breakfasts = [...el.breakfast, [0, "on", "admin"]];
-    const launchs = [...el.launch, [1, "on", "admin"]];
-    const dinners = [...el.dinner, [1, "on", "admin"]];
-    const shops = [...el.shop, 0];
-    const depositComments = [...el.depositComment, { user: user._id, comment: [], createdAt: Date.now() }];
-    const shoppingComments = [...el.shoppingComments, { user: user._id, comment: [], createdAt: Date.now() }];
-    const extraShoppingComments = [...el.extraShoppingComments, { user: user._id, comment: [], createdAt: Date.now() }];
+  if (manager) {
+    const currentMonthMeals = await Meal.find({ month: currentMonth, year: currentYear, mealManager: manager });
+    currentMonthMeals.map(async (el, i) => {
+      const borders = [...el.border, user];
+      const breakfasts = [...el.breakfast, [0, "on", "admin"]];
+      const launchs = [...el.launch, [1, "on", "admin"]];
+      const dinners = [...el.dinner, [1, "on", "admin"]];
+      const shops = [...el.shop, 0];
+      const depositComments = [...el.depositComment, { user: user._id, comment: [], createdAt: Date.now() }];
+      const shoppingComments = [...el.shoppingComments, { user: user._id, comment: [], createdAt: Date.now() }];
+      const extraShoppingComments = [...el.extraShoppingComments, { user: user._id, comment: [], createdAt: Date.now() }];
 
-    const extraShops = [...el.extraShop, 0];
-    const moneys = [...el.money, 0];
-    await Meal.findByIdAndUpdate(el._id, {
-      border: borders,
-      breakfast: breakfasts,
-      launch: launchs,
-      dinner: dinners,
-      shop: shops,
-      money: moneys,
-      depositComment: depositComments,
-      shoppingComments,
-      extraShoppingComments,
-      extraShop: extraShops
+      const extraShops = [...el.extraShop, 0];
+      const moneys = [...el.money, 0];
+      await Meal.findByIdAndUpdate(el._id, {
+        border: borders,
+        breakfast: breakfasts,
+        launch: launchs,
+        dinner: dinners,
+        shop: shops,
+        money: moneys,
+        depositComment: depositComments,
+        shoppingComments,
+        extraShoppingComments,
+        extraShop: extraShops
+      });
     });
-  });
+  }
   resAndSendToken(user, res, 201);
 });
 
