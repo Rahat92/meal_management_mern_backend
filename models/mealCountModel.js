@@ -107,7 +107,10 @@ const mealCountSchema = new mongoose.Schema(
             productName: String,
             productCount: String,
             unitPrice: Number,
-            category: mongoose.Schema.Types.ObjectId
+            category: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: 'ProductCategory'
+            }
           }
         ],
         createdAt: {

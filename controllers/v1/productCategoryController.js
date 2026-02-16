@@ -1,3 +1,4 @@
+const Meal = require('../../models/mealCountModel');
 const ProductCategory = require('../../models/productCategoryModel');
 exports.getProductCategories = async (req, res) => {
   try {
@@ -44,4 +45,76 @@ exports.deleteProductCategory = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Error deleting product category', error });
     }
+};
+exports.getExtraShoppingWithCategory = async (req, res) => {
+  try {
+
+    const data = await Meal.aggregate([
+
+      // Break extraShoppingComments array
+      { $unwind: "$extraShoppingComments" },
+
+      // Break comment array
+      { $unwind: "$extraShoppingComments.comment" },
+
+      // Join ProductCategory
+      {
+        $lookup: {
+          from: "productcategories", // mongoose lowercase + plural
+          localField: "extraShoppingComments.comment.category",
+          foreignField: "_id",
+          as: "categoryInfo"
+        }
+      },
+
+      { $unwind: { path: "$categoryInfo", preserveNullAndEmptyArrays: true } },
+
+      // Join User (optional but recommended)
+      {
+        $lookup: {
+          from: "users",
+          localField: "extraShoppingComments.user",
+          foreignField: "_id",
+          as: "userInfo"
+        }
+      },
+
+      { $unwind: { path: "$userInfo", preserveNullAndEmptyArrays: true } },
+
+      // Final Output Shape
+      {
+        $project: {
+          _id: 0,
+          mealDate: "$date",
+          month: 1,
+          year: 1,
+
+          productName: "$extraShoppingComments.comment.productName",
+          productCount: "$extraShoppingComments.comment.productCount",
+          unitPrice: "$extraShoppingComments.comment.unitPrice",
+
+          categoryId: "$categoryInfo._id",
+          categoryName: "$categoryInfo.name",
+
+          userId: "$userInfo._id",
+          userName: "$userInfo.name",
+
+          commentCreatedAt: "$extraShoppingComments.createdAt"
+        }
+      }
+
+    ]);
+
+    res.status(200).json({
+      success: true,
+      total: data.length,
+      data
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 };
