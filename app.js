@@ -13,6 +13,7 @@ const messageRouter = require("./routes/messageRoutes");
 const foodRouter = require("./routes/foodRoutes");
 const mealRouter = require("./routes/mealRoutes");
 const productCategoryRouter = require("./routes/productCategoryRoutes");
+const productTagRouter = require("./routes/productTagRouter");
 const morgan = require("morgan");
 
 const app = express();
@@ -28,6 +29,7 @@ app.use("/api/v1/meal", mealCountRouter);
 app.use("/api/v1/foods", foodRouter);
 app.use("/api/v1/year-month", yearMonthRouter);
 app.use("/api/v1/product-categories", productCategoryRouter)
+app.use("/api/v1/product-tags", productTagRouter)
 app.use("/api/v1/conversations", conversationRouter);
 app.use("/api/v1/messages", messageRouter);
 app.use("/api/v2/meal", mealRouter); // Uncommented
