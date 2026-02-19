@@ -4,6 +4,11 @@ const productTagSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    category: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ProductCategory',
+        required: true
+    },
     createdAt: {
         type: Date,
         default: Date.now

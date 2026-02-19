@@ -10,8 +10,16 @@ const productCategorySchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     }
+}, {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
 
+productCategorySchema.virtual('productTags', {
+    ref: 'ProductsTag',
+    localField: '_id',
+    foreignField: 'category'
+});
 const ProductCategory = mongoose.model('ProductCategory', productCategorySchema);
 
 module.exports = ProductCategory;

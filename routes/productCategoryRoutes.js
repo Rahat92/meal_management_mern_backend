@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createProductCategory, getProductCategories, deleteProductCategory, updateProductCategory, getExtraShoppingWithCategory, getMarketingWithCategory } = require('../controllers/v1/productCategoryController');
+const { createProductCategory, getProductCategories, deleteProductCategory, updateProductCategory, getExtraShoppingWithCategory, getMarketingWithCategory, getAProductCategory } = require('../controllers/v1/productCategoryController');
 
 router
     .route('/')
@@ -9,6 +9,7 @@ router
 
 router
     .route("/:id")
+    .get(getAProductCategory)
     .delete(deleteProductCategory)
     .patch(updateProductCategory)
 router

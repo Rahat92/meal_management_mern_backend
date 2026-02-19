@@ -9,7 +9,18 @@ exports.getProductCategories = async (req, res) => {
     res.status(500).json({ message: 'Error fetching product categories', error });
   }
 };
-
+exports.getAProductCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const productCategory = await ProductCategory.findById(id).populate('productTags');
+    if (!productCategory) {
+      return res.status(404).json({ message: 'Product category not found' });
+    }
+    res.status(200).json(productCategory);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching product category', error });
+  }
+};
 exports.createProductCategory = async (req, res) => {
   try {
     const { name } = req.body;
@@ -49,28 +60,41 @@ exports.deleteProductCategory = async (req, res) => {
 };
 exports.getExtraShoppingWithCategory = async (req, res) => {
   try {
+    const managerId = new mongoose.Types.ObjectId(req.params.managerId);
 
     const data = await Meal.aggregate([
 
-      // Break extraShoppingComments array
-      { $unwind: "$extraShoppingComments" },
+      // 1️⃣ Filter early
+      {
+        $match: { mealManager: managerId }
+      },
 
-      // Break comment array
+      // 2️⃣ Unwind nested arrays
+      { $unwind: "$extraShoppingComments" },
       { $unwind: "$extraShoppingComments.comment" },
 
-      // Join ProductCategory
+      // 3️⃣ Lookup Category
       {
         $lookup: {
-          from: "productcategories", // mongoose lowercase + plural
+          from: "productcategories",
           localField: "extraShoppingComments.comment.category",
           foreignField: "_id",
           as: "categoryInfo"
         }
       },
-
       { $unwind: { path: "$categoryInfo", preserveNullAndEmptyArrays: true } },
 
-      // Join User (optional but recommended)
+      // 4️⃣ Lookup Tags (array)
+      {
+        $lookup: {
+          from: "productstags",
+          localField: "extraShoppingComments.comment.tags",
+          foreignField: "_id",
+          as: "tagInfo"
+        }
+      },
+
+      // 5️⃣ Lookup User
       {
         $lookup: {
           from: "users",
@@ -79,15 +103,9 @@ exports.getExtraShoppingWithCategory = async (req, res) => {
           as: "userInfo"
         }
       },
-
       { $unwind: { path: "$userInfo", preserveNullAndEmptyArrays: true } },
-      // filter with managerId
-      {
-        $match: {
-          "mealManager": mongoose.Types.ObjectId(req.params.managerId)
-        }
-      },
-      // Final Output Shape
+
+      // 6️⃣ Final Projection
       {
         $project: {
           _id: 0,
@@ -99,11 +117,34 @@ exports.getExtraShoppingWithCategory = async (req, res) => {
           productCount: "$extraShoppingComments.comment.productCount",
           unitPrice: "$extraShoppingComments.comment.unitPrice",
 
-          categoryId: "$categoryInfo._id",
-          categoryName: "$categoryInfo.name",
+          // Category (single object)
+          category: {
+            categoryId: "$categoryInfo._id",
+            categoryName: "$categoryInfo.name"
+          },
 
-          userId: "$userInfo._id",
-          userName: "$userInfo.name",
+          // 🔥 Tag Breakdown
+          tags: {
+            $cond: {
+              if: { $gt: [{ $size: "$tagInfo" }, 0] },
+              then: {
+                $map: {
+                  input: "$tagInfo",
+                  as: "tag",
+                  in: {
+                    tagId: "$$tag._id",
+                    tagName: "$$tag.name"
+                  }
+                }
+              },
+              else: []
+            }
+          },
+
+          user: {
+            userId: "$userInfo._id",
+            userName: "$userInfo.name"
+          },
 
           commentCreatedAt: "$extraShoppingComments.createdAt"
         }
