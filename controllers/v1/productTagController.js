@@ -17,7 +17,13 @@ exports.createProductTag = async (req, res) => {
 
 exports.getProductTags = async (req, res) => {
     try {
-        const productTags = await ProductsTag.find();
+        let filter = {};
+        if (req.query.categoryId) {
+            filter.category = req.query.categoryId;
+        }else {
+            filter = {};
+        }
+        const productTags = await ProductsTag.find(filter);
         res.status(200).json({
             status: "success",
             data: productTags

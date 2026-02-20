@@ -3,7 +3,7 @@ const Meal = require('../../models/mealCountModel');
 const ProductCategory = require('../../models/productCategoryModel');
 exports.getProductCategories = async (req, res) => {
   try {
-    const productCategories = await ProductCategory.find();
+    const productCategories = await ProductCategory.find().populate('productTags');
     res.status(200).json(productCategories);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching product categories', error });

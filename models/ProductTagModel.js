@@ -4,6 +4,14 @@ const productTagSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    nameEn: {
+        type: String,
+        required: true
+    },
+    nameBn: {
+        type: String,
+        required: true
+    },
     category: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'ProductCategory',

@@ -372,6 +372,8 @@ exports.updateExtraShopMoney = catchAsyncError(async (req, res, next) => {
   copyBorderExtraShopCommentsArr[req.body.borderIndex].user = req.body.customerId;
   copyBorderExtraShopMoneyArr[req.body.borderIndex] = req.body.extraShop;
   meal.extraShop = copyBorderExtraShopMoneyArr;
+  meal.extraShoppingComments = copyBorderExtraShopCommentsArr
+
   await meal.save();
   res.status(200).json({
     status: "Success",
