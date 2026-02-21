@@ -1,5 +1,5 @@
 const express = require("express");
-const { createYearMonth, getAllYearMonth,getYearMonth,deleteYearMonth } = require("../controllers/yearMonthController");
+const { createYearMonth, getAllYearMonth,getYearMonth,deleteYearMonth } = require("../controllers/v1/yearMonthController");
 const { deleteAMonth } = require("../controllers/v1/mealCountController");
 const { protect, restrictedTo } = require("../controllers/v1/authController");
 

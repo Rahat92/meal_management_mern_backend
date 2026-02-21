@@ -10,6 +10,10 @@ const yearMonthSchema = new mongoose.Schema({
         type: mongoose.Schema.ObjectId,
         ref:'User',
         required: ['Must have a manager']
+    },
+    deleted: {
+        type: Boolean,
+        default: false
     }
 })
 

@@ -14,12 +14,14 @@ const {
   updateStoreLunch,
   updateLunchMenu,
   updateBreakfast,
+  getNewMonthMeals,
 } = require("../controllers/v1/mealCountController");
 const { protect, restrictedTo } = require("../controllers/v1/authController");
 const router = express.Router();
 
 router.route("/").post(protect,restrictedTo('admin'), createMeal);
-router.route("/:month/:year").get( protect, getMonthMeals);
+// router.route("/:month/:year").get( protect, getMonthMeals);
+router.route("/:month/:year").get( protect, getNewMonthMeals);
 router
   .route("/monthly-borders-stats/:year/:month/:day")
   .get(protect, getBorderMonthlyStats);

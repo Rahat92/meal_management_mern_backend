@@ -9,6 +9,10 @@ const mealCountSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Must have a month"],
     },
+    deleted: {
+      type: Boolean,
+      default: false
+    },
     mealManager: {
       type: mongoose.Schema.ObjectId,
       ref: 'User',

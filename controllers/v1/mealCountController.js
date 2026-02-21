@@ -4,6 +4,7 @@ const User = require("../../models/userModel");
 const YearMonthModel = require("../../models/yearMonthModel");
 const AppError = require("../../utils/AppError");
 const catchAsyncError = require("../../utils/catchAsyncError");
+const MealsModel = require("../../models/mealModel");
 
 exports.createMeal = catchAsyncError(async (req, res) => {
   // Ensure req.body is an array
@@ -51,6 +52,95 @@ exports.createMeal = catchAsyncError(async (req, res) => {
   });
 });
 
+exports.createMonthOfMeals = catchAsyncError(async (req, res) => {
+  // Ensure req.body is an array
+  if (!Array.isArray(req.body)) {
+    return res.status(400).json({ status: "Fail", message: "Invalid input format" });
+  }
+
+  // Fetch users and filter non-superadmin borders
+  const users = await User.find({
+    $or: [{ manager: req.user._id }, { _id: req.user._id }],
+    active: true
+  }, "_id role");
+  const borders = users.filter((user) => user.role !== "superadmin");
+  const borderIds = borders.map(user => user._id);
+
+  // Process meal data
+  // const body = req.body.map((el) => ({
+  //   ...el,
+  //   border: borderIds, // Store only user IDs instead of full objects
+  //   mealManager: req.user._id,
+  //   money: borderIds.map(() => 0), // Create independent arrays
+  //   shop: borderIds.map(() => 0),
+  //   depositComment: borderIds.map((id) => ({ user: id, comment: [] })),
+  //   shoppingComments: borderIds.map((id) => ({ user: id, comment: [] })),
+  //   extraShop: borderIds.map(() => 0),
+  //   extraShoppingComments: borderIds.map((id) => ({ user: id, comment: [] })),
+  //   breakfast: borderIds.map(() => [.5, "on", "admin", "default"]),
+  //   launch: borderIds.map(() => [1, "on", "admin", "default"]),
+  //   dinner: borderIds.map(() => [1, "on", "admin", "default"]),
+  // }));
+  const newBody = req.body.map((el) => {
+    return {
+      mealDate: new Date(Number(el.year), el.month, Number(el.day) + 1),
+      ...el,
+      mealManager: req.user._id,
+      borders: [
+        ...borderIds.map(border => {
+          return {
+            user: border,
+            money: 0,
+            shop: 0,
+            extraShop: 0,
+            breakfast: {
+              meal: 0.5,
+              status: "on",
+              updatedBy: req.user._id
+            },
+            launch: {
+              meal: 1,
+              status: "on",
+              updatedBy: req.user._id
+            },
+            dinner: {
+              meal: 1,
+              status: "on",
+              updatedBy: req.user._id
+            },
+            depositComment: {
+              comment: [],
+            },
+            shoppingComments: {
+              comment: [],
+            },
+
+            extraShoppingComments: {
+              comment: [],
+            }
+          }
+        })
+      ]
+    }
+  })
+  // // Upsert YearMonth entry
+  // await YearMonthModel.findOneAndUpdate(
+  //   { year: req.body[0].year, month: req.body[0].month, manager: req.user._id },
+  //   { $setOnInsert: { year: req.body[0].year, month: req.body[0].month, manager: req.user._id } },
+  //   { upsert: true, new: true }
+  // );
+
+  // // Create meal entries
+  // const meal = await Meal.create(body);
+  const meal = await MealsModel.create(newBody);
+  console.log(meal)
+
+  res.status(201).json({
+    status: "Success",
+    meal,
+  });
+});
+
 exports.updateStoreLunch = catchAsyncError(async (req, res) => {
   // Step 1: Find the document
   const meal = await Meal.findById(req.params.id);
@@ -77,6 +167,7 @@ exports.updateStoreLunch = catchAsyncError(async (req, res) => {
 
 exports.getMonthMeals = catchAsyncError(async (req, res) => {
   const monthlyMeals = await Meal.find({
+    deleted: true,
     month: req.params.month,
     year: req.params.year,
     mealManager: req.user.role === 'admin' ? req.user._id : req.user.manager._id
@@ -90,6 +181,23 @@ exports.getMonthMeals = catchAsyncError(async (req, res) => {
     monthlyMeals,
   });
 });
+exports.getNewMonthMeals = catchAsyncError(async (req, res) => {
+  const monthlyMeals = await MealsModel.find({
+    deleted: false,
+    month: req.params.month,
+    year: req.params.year,
+    mealManager: req.user.role === 'admin' ? req.user._id : req.user.manager._id
+    // mealManager: req.user.magager,
+  }).populate('mealManager borders.user');
+
+  res.status(200).json({
+    status: "Success",
+    month: req.params.month,
+    year: req.params.year,
+    monthlyMeals,
+  });
+});
+
 exports.updateMeal = catchAsyncError(async (req, res) => {
   const meal = await Meal.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
@@ -101,23 +209,39 @@ exports.updateMeal = catchAsyncError(async (req, res) => {
 });
 
 exports.updateLunch = catchAsyncError(async (req, res) => {
-  const lunch = await Meal.updateOne(
-    { _id: req.params.id },
-    { $set: { [`launch.${req.body.borderIndex}`]: req.body.lunch } }
-  )
+  // const lunch = await Meal.updateOne(
+  //   { _id: req.params.id },
+  //   { $set: { [`launch.${req.body.borderIndex}`]: req.body.lunch } }
+  // )
+  console.log(req.body)
+  const lunch = await MealsModel.updateOne(
+    {
+      _id: req.body.id,
+      "borders.user": req.body.lunch.user
+    },
+    {
+      $set: {
+        "borders.$.launch.meal": req.body.lunch.meal,
+        // "borders.$.launch.updatedBy": req.user._id
+      }
+    }
+  );
   res.status(200).json({
     status: 'Success',
     lunch: lunch
   })
 })
 exports.updateBreakfast = catchAsyncError(async (req, res) => {
-  const lunch = await Meal.updateOne(
-    { _id: req.params.id },
-    { $set: { [`breakfast.${req.body.borderIndex}`]: req.body.breakfast } }
+  const breakfast = await MealsModel.updateOne(
+    {
+      _id: req.params.id,
+      "borders.user": req.body.breakfast.user
+    },
+    { $set: { "borders.$.breakfast.meal": req.body.breakfast.meal } }
   )
   res.status(200).json({
     status: 'Success',
-    lunch: lunch
+    breakfast: breakfast
   })
 })
 
@@ -135,13 +259,21 @@ exports.updateLunchMenu = catchAsyncError(async (req, res) => {
 
 
 exports.update_dinner = catchAsyncError(async (req, res) => {
-  const dinner = await Meal.updateOne(
-    { _id: req.params.id },
-    { $set: { [`dinner.${req.body.borderIndex}`]: req.body.dinner } }
-  )
+  const lunch = await MealsModel.updateOne(
+    {
+      _id: req.body.id,
+      "borders.user": req.body.dinner.user
+    },
+    {
+      $set: {
+        "borders.$.dinner.meal": req.body.dinner.meal,
+        // "borders.$.launch.updatedBy": req.user._id
+      }
+    }
+  );
   res.status(200).json({
     status: 'Success',
-    dinner: dinner
+    lunch: lunch
   })
 })
 
@@ -389,6 +521,7 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
     {
       $match: {
         year: 2026 * 1,
+        deleted: true,
         day: {
           $gte: 1,
           $lte: currentMonth !== Number(month) ? 31 : day * 1,
@@ -449,6 +582,7 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
       },
     },
   ]);
+  console.log(monthlyMeals)
   res.status(200).json({
     status: "Success",
     monthlyMeals,
@@ -494,12 +628,12 @@ exports.dailyMealCalc = catchAsyncError(async (req, res) => {
       },
     },
   ]);
+  console.log(monthlyMeals)
   res.status(200).json({
     status: "Success",
     monthlyMeals,
   });
 });
-
 
 exports.deleteAMonth = catchAsyncError(async (req, res, next) => {
   await Meal.deleteMany({
