@@ -420,7 +420,6 @@ exports.setMyFood = catchAsyncError(async (req, res, next) => {
 });
 
 exports.updateMoney = catchAsyncError(async (req, res, next) => {
-  console.log(req.body)
   if (req.user.role !== "admin" && req.user.role !== "superadmin") {
     // return next(
     //   new AppError(
@@ -434,15 +433,39 @@ exports.updateMoney = catchAsyncError(async (req, res, next) => {
         "You have no permisson to update your balance, only admin can do this",
     });
   }
-  const meal = await Meal.findByIdAndUpdate(
-    req.body.id,
+  // const meal = await Meal.findByIdAndUpdate(
+  //   req.body.id,
+  //   {
+  //     $set: {
+  //       [`money.${req.body.borderIndex}`]: req.body.money,
+  //       [`depositComment.${req.body.borderIndex}`]: { comment: req.body.depositComment, user: req.body.customerId }
+  //     }
+  //   },
+  //   { new: true }
+  // )
+// const lunch = await MealsModel.updateOne(
+//     {
+//       _id: req.body.id,
+//       "borders.user": req.body.dinner.user
+//     },
+//     {
+//       $set: {
+//         "borders.$.dinner.meal": req.body.dinner.meal,
+//         // "borders.$.launch.updatedBy": req.user._id
+//       }
+//     }
+//   );
+  const meal = await MealsModel.updateOne(
+    {
+      _id: req.body.id,
+      "borders.user":req.body.customerId
+    }, 
     {
       $set: {
-        [`money.${req.body.borderIndex}`]: req.body.money,
-        [`depositComment.${req.body.borderIndex}`]: { comment: req.body.depositComment, user: req.body.customerId }
+        "borders.$.money":req.body.money,
+        "borders.$.depositComment.comment":req.body.depositComment
       }
-    },
-    { new: true }
+    }
   )
 
 
@@ -491,7 +514,7 @@ exports.updateShopMoney = catchAsyncError(async (req, res, next) => {
   //     }
   //   );
 
-
+  console.log(req.body)
   const meal = await MealsModel.updateOne(
     {
       _id: req.body.id,
@@ -510,6 +533,7 @@ exports.updateShopMoney = catchAsyncError(async (req, res, next) => {
   });
 });
 exports.updateExtraShopMoney = catchAsyncError(async (req, res, next) => {
+
   if (req.user.role !== "admin" && req.user.role !== "superadmin") {
     // return next(
     //   new AppError(
@@ -523,16 +547,26 @@ exports.updateExtraShopMoney = catchAsyncError(async (req, res, next) => {
         "You have no permisson to update your Extra Shop, only admin can do this",
     });
   }
-  const meal = await Meal.findById(req.body.id);
-  const copyBorderExtraShopMoneyArr = [...meal.extraShop];
-  const copyBorderExtraShopCommentsArr = [...meal.extraShoppingComments];
-  copyBorderExtraShopCommentsArr[req.body.borderIndex].comment = req.body.extraShoppingComments;
-  copyBorderExtraShopCommentsArr[req.body.borderIndex].user = req.body.customerId;
-  copyBorderExtraShopMoneyArr[req.body.borderIndex] = req.body.extraShop;
-  meal.extraShop = copyBorderExtraShopMoneyArr;
-  meal.extraShoppingComments = copyBorderExtraShopCommentsArr
-
-  await meal.save();
+  // const meal = await Meal.findById(req.body.id);
+  // const copyBorderExtraShopMoneyArr = [...meal.extraShop];
+  // const copyBorderExtraShopCommentsArr = [...meal.extraShoppingComments];
+  // copyBorderExtraShopCommentsArr[req.body.borderIndex].comment = req.body.extraShoppingComments;
+  // copyBorderExtraShopCommentsArr[req.body.borderIndex].user = req.body.customerId;
+  // copyBorderExtraShopMoneyArr[req.body.borderIndex] = req.body.extraShop;
+  // meal.extraShop = copyBorderExtraShopMoneyArr;
+  // meal.extraShoppingComments = copyBorderExtraShopCommentsArr
+  const meal = await MealsModel.updateOne(
+    {
+      _id: req.body.id,
+      "borders.user": req.body.customerId,
+    },
+    {
+      $set: {
+        "borders.$.extraShoppingComments.comment": req.body.extraShoppingComments,
+        "borders.$.extraShop": req.body.extraShop
+      }
+    }
+  )
   res.status(200).json({
     status: "Success",
     meal,
