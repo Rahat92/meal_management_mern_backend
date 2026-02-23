@@ -453,8 +453,7 @@ exports.updateMoney = catchAsyncError(async (req, res, next) => {
   });
 });
 exports.updateShopMoney = catchAsyncError(async (req, res, next) => {
-  console.log(req.body)
-  // return;
+
   if (req.user.role !== "admin" && req.user.role !== "superadmin") {
     // return next(
     //   new AppError(
@@ -468,16 +467,43 @@ exports.updateShopMoney = catchAsyncError(async (req, res, next) => {
         "You have no permisson to update your balance, only admin can do this",
     });
   }
-  const meal = await Meal.findById(req.body.id);
+  // const meal = await Meal.findById(req.body.id);
 
-  const copyBorderShopMoneyArr = [...meal.shop];
-  const copyBorderShopMoneyComment = [...meal.shoppingComments];
-  copyBorderShopMoneyComment[req.body.borderIndex].comment = req.body.shoppingComments;
-  copyBorderShopMoneyComment[req.body.borderIndex].user = req.body.customerId;
-  copyBorderShopMoneyArr[req.body.borderIndex] = req.body.shop;
-  meal.shop = copyBorderShopMoneyArr;
-  meal.shoppingComments = copyBorderShopMoneyComment
-  await meal.save();
+  // const copyBorderShopMoneyArr = [...meal.shop];
+  // const copyBorderShopMoneyComment = [...meal.shoppingComments];
+  // copyBorderShopMoneyComment[req.body.borderIndex].comment = req.body.shoppingComments;
+  // copyBorderShopMoneyComment[req.body.borderIndex].user = req.body.customerId;
+  // copyBorderShopMoneyArr[req.body.borderIndex] = req.body.shop;
+  // meal.shop = copyBorderShopMoneyArr;
+  // meal.shoppingComments = copyBorderShopMoneyComment
+  // await meal.save()0;
+
+  // const lunch = await MealsModel.updateOne(
+  //     {
+  //       _id: req.body.id,
+  //       "borders.user": req.body.dinner.user
+  //     },
+  //     {
+  //       $set: {
+  //         "borders.$.dinner.meal": req.body.dinner.meal,
+  //         // "borders.$.launch.updatedBy": req.user._id
+  //       }
+  //     }
+  //   );
+
+
+  const meal = await MealsModel.updateOne(
+    {
+      _id: req.body.id,
+      "borders.user": req.body.customerId
+    },
+    {
+      $set: {
+        "borders.$.shoppingComments.comment": req.body.shoppingComments,
+        "borders.$.shop": req.body.shop
+      }
+    }
+  )
   res.status(200).json({
     status: "Success",
     meal,
