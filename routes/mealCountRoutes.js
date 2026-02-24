@@ -16,6 +16,7 @@ const {
   updateBreakfast,
   getNewMonthMeals,
   createMonthOfMeals,
+  getUserMonthlyStats,
 } = require("../controllers/v1/mealCountController");
 const { protect, restrictedTo } = require("../controllers/v1/authController");
 const router = express.Router();
@@ -25,7 +26,7 @@ router.route("/").post(protect,restrictedTo('admin'), createMonthOfMeals);
 router.route("/:month/:year").get( protect, getNewMonthMeals);
 router
   .route("/monthly-borders-stats/:year/:month/:day")
-  .get(protect, getBorderMonthlyStats);
+  .get(protect, getUserMonthlyStats);
 router
   .route("/update-person-full-meal/:id")
   .patch(protect, updatePersonFullMeal);

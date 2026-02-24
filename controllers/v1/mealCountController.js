@@ -443,27 +443,27 @@ exports.updateMoney = catchAsyncError(async (req, res, next) => {
   //   },
   //   { new: true }
   // )
-// const lunch = await MealsModel.updateOne(
-//     {
-//       _id: req.body.id,
-//       "borders.user": req.body.dinner.user
-//     },
-//     {
-//       $set: {
-//         "borders.$.dinner.meal": req.body.dinner.meal,
-//         // "borders.$.launch.updatedBy": req.user._id
-//       }
-//     }
-//   );
+  // const lunch = await MealsModel.updateOne(
+  //     {
+  //       _id: req.body.id,
+  //       "borders.user": req.body.dinner.user
+  //     },
+  //     {
+  //       $set: {
+  //         "borders.$.dinner.meal": req.body.dinner.meal,
+  //         // "borders.$.launch.updatedBy": req.user._id
+  //       }
+  //     }
+  //   );
   const meal = await MealsModel.updateOne(
     {
       _id: req.body.id,
-      "borders.user":req.body.customerId
-    }, 
+      "borders.user": req.body.customerId
+    },
     {
       $set: {
-        "borders.$.money":req.body.money,
-        "borders.$.depositComment.comment":req.body.depositComment
+        "borders.$.money": req.body.money,
+        "borders.$.depositComment.comment": req.body.depositComment
       }
     }
   )
@@ -648,41 +648,83 @@ exports.updateExtraShopMoney = catchAsyncError(async (req, res, next) => {
 //   });
 // });
 
-exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
-  const user = req.user;
-  const { month, year, day } = req.params;
+// exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
+//   const user = req.user;
+//   const { month, year, day } = req.params;
 
-  const currentMonth = new Date().getMonth() + 1;
+//   const currentMonth = new Date().getMonth() + 1;
+
+//   const mealManagerId =
+//     user.role === "admin" ? user._id : user.manager;
+
+//   const monthlyMeals = await MealsModel.aggregate([
+//     {
+//       $match: {
+//         year: Number(year),
+//         month: Number(month),
+//         deleted: false,
+//         mealManager: new mongoose.Types.ObjectId(mealManagerId),
+//         day: {
+//           $gte: 1,
+//           $lte:
+//             currentMonth !== Number(month)
+//               ? 31
+//               : Number(day),
+//         },
+//       },
+//     },
+
+//     // break borders array
+//     { $unwind: "$borders" },
+
+//     {
+//       $group: {
+//         _id: {
+//           month: "$month",
+//           year: "$year",
+//         },
+
+//         totalBreakfast: { $sum: "$borders.breakfast.meal" },
+//         totalLaunch: { $sum: "$borders.launch.meal" },
+//         totalDinner: { $sum: "$borders.dinner.meal" },
+
+//         totalMoney: { $sum: "$borders.money" },
+//         totalShop: { $sum: "$borders.shop" },
+//         totalExtraShop: { $sum: "$borders.extraShop" },
+
+//         totalBorders: { $sum: 1 },
+//       },
+//     },
+//   ]);
+
+//   res.status(200).json({
+//     status: "Success",
+//     monthlyMeals,
+//   });
+// });
+
+exports.getUserMonthlyStats = catchAsyncError(async (req, res) => {
+  const user = req.user;
+  const { month, year } = req.params;
 
   const mealManagerId =
     user.role === "admin" ? user._id : user.manager;
 
-  const monthlyMeals = await MealsModel.aggregate([
+  const stats = await MealsModel.aggregate([
     {
       $match: {
         year: Number(year),
         month: Number(month),
         deleted: false,
         mealManager: new mongoose.Types.ObjectId(mealManagerId),
-        day: {
-          $gte: 1,
-          $lte:
-            currentMonth !== Number(month)
-              ? 31
-              : Number(day),
-        },
       },
     },
 
-    // break borders array
     { $unwind: "$borders" },
 
     {
       $group: {
-        _id: {
-          month: "$month",
-          year: "$year",
-        },
+        _id: "$borders.user",
 
         totalBreakfast: { $sum: "$borders.breakfast.meal" },
         totalLaunch: { $sum: "$borders.launch.meal" },
@@ -692,14 +734,40 @@ exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
         totalShop: { $sum: "$borders.shop" },
         totalExtraShop: { $sum: "$borders.extraShop" },
 
-        totalBorders: { $sum: 1 },
+        totalDays: { $sum: 1 },
+      },
+    },
+
+    // Optional: get user details
+    {
+      $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    { $unwind: "$user" },
+
+    {
+      $project: {
+        _id: 0,
+        userId: "$user._id",
+        name: "$user.name",
+        totalBreakfast: 1,
+        totalLaunch: 1,
+        totalDinner: 1,
+        totalMoney: 1,
+        totalShop: 1,
+        totalExtraShop: 1,
+        totalDays: 1,
       },
     },
   ]);
 
   res.status(200).json({
     status: "Success",
-    monthlyMeals,
+    stats,
   });
 });
 
