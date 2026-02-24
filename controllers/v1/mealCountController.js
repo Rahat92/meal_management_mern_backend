@@ -514,7 +514,6 @@ exports.updateShopMoney = catchAsyncError(async (req, res, next) => {
   //     }
   //   );
 
-  console.log(req.body)
   const meal = await MealsModel.updateOne(
     {
       _id: req.body.id,
@@ -573,122 +572,166 @@ exports.updateExtraShopMoney = catchAsyncError(async (req, res, next) => {
   });
 });
 
+// exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
+//   const user = req.user;
+//   const { month, year, day } = req.params;
+//   const currentMonth = new Date().getMonth();
+//   const monthlyMeals = await Meal.aggregate([
+//     {
+//       $match: {
+//         year: 2026 * 1,
+//         deleted: true,
+//         day: {
+//           $gte: 1,
+//           $lte: currentMonth !== Number(month) ? 31 : day * 1,
+//         },
+//         month: month * 1,
+//         mealManager: mongoose.Types.ObjectId(user.role === 'admin' ? user._id : user.manager._id)
+//       },
+//     },
+//     {
+//       $project: {
+//         month: 1,
+//         year: 1,
+//         x: {
+//           $zip: {
+//             inputs: [
+//               "$border",
+//               "$breakfast",
+//               "$launch",
+//               "$dinner",
+//               "$money",
+//               "$shop",
+//               "$extraShop",
+//             ],
+//           },
+//         },
+//       },
+//     },
+//     {
+//       $unwind: "$x",
+//     },
+//     {
+//       $project: {
+//         _id: false,
+//         border: { $arrayElemAt: ["$x", 0] },
+//         breakfast: { $arrayElemAt: ["$x", 1] },
+//         launch: { $arrayElemAt: ["$x", 2] },
+//         dinner: { $arrayElemAt: ["$x", 3] },
+//         money: { $arrayElemAt: ["$x", 4] },
+//         shop: { $arrayElemAt: ["$x", 5] },
+//         extraShop: { $arrayElemAt: ["$x", 6] },
+//         month: 1,
+//         year: 1,
+//       },
+//     },
+//     {
+//       $group: {
+//         _id: {
+//           month: "$month",
+//           year: "$year",
+//         },
+//         border: { $push: "$border" },
+//         breakfast: { $push: "$breakfast" },
+//         launch: { $push: "$launch" },
+//         dinner: { $push: "$dinner" },
+//         money: { $push: "$money" },
+//         shop: { $push: "$shop" },
+//         extraShop: { $push: "$extraShop" },
+//       },
+//     },
+//   ]);
+//   console.log(monthlyMeals)
+//   res.status(200).json({
+//     status: "Success",
+//     monthlyMeals,
+//   });
+// });
+
 exports.getBorderMonthlyStats = catchAsyncError(async (req, res) => {
   const user = req.user;
   const { month, year, day } = req.params;
-  const currentMonth = new Date().getMonth();
-  const monthlyMeals = await Meal.aggregate([
+
+  const currentMonth = new Date().getMonth() + 1;
+
+  const mealManagerId =
+    user.role === "admin" ? user._id : user.manager;
+
+  const monthlyMeals = await MealsModel.aggregate([
     {
       $match: {
-        year: 2026 * 1,
-        deleted: true,
+        year: Number(year),
+        month: Number(month),
+        deleted: false,
+        mealManager: new mongoose.Types.ObjectId(mealManagerId),
         day: {
           $gte: 1,
-          $lte: currentMonth !== Number(month) ? 31 : day * 1,
-        },
-        month: month * 1,
-        mealManager: mongoose.Types.ObjectId(user.role === 'admin' ? user._id : user.manager._id)
-      },
-    },
-    {
-      $project: {
-        month: 1,
-        year: 1,
-        x: {
-          $zip: {
-            inputs: [
-              "$border",
-              "$breakfast",
-              "$launch",
-              "$dinner",
-              "$money",
-              "$shop",
-              "$extraShop",
-            ],
-          },
+          $lte:
+            currentMonth !== Number(month)
+              ? 31
+              : Number(day),
         },
       },
     },
-    {
-      $unwind: "$x",
-    },
-    {
-      $project: {
-        _id: false,
-        border: { $arrayElemAt: ["$x", 0] },
-        breakfast: { $arrayElemAt: ["$x", 1] },
-        launch: { $arrayElemAt: ["$x", 2] },
-        dinner: { $arrayElemAt: ["$x", 3] },
-        money: { $arrayElemAt: ["$x", 4] },
-        shop: { $arrayElemAt: ["$x", 5] },
-        extraShop: { $arrayElemAt: ["$x", 6] },
-        month: 1,
-        year: 1,
-      },
-    },
+
+    // break borders array
+    { $unwind: "$borders" },
+
     {
       $group: {
         _id: {
           month: "$month",
           year: "$year",
         },
-        border: { $push: "$border" },
-        breakfast: { $push: "$breakfast" },
-        launch: { $push: "$launch" },
-        dinner: { $push: "$dinner" },
-        money: { $push: "$money" },
-        shop: { $push: "$shop" },
-        extraShop: { $push: "$extraShop" },
+
+        totalBreakfast: { $sum: "$borders.breakfast.meal" },
+        totalLaunch: { $sum: "$borders.launch.meal" },
+        totalDinner: { $sum: "$borders.dinner.meal" },
+
+        totalMoney: { $sum: "$borders.money" },
+        totalShop: { $sum: "$borders.shop" },
+        totalExtraShop: { $sum: "$borders.extraShop" },
+
+        totalBorders: { $sum: 1 },
       },
     },
   ]);
-  console.log(monthlyMeals)
+
   res.status(200).json({
     status: "Success",
     monthlyMeals,
   });
 });
+
 exports.dailyMealCalc = catchAsyncError(async (req, res) => {
   const monthlyMeals = await Meal.aggregate([
-    // {
-    //   $match: {
-    //     month: 10,
-    //   },
-    // },
-    {
-      $project: {
-        month: 1,
-        x: {
-          $zip: {
-            inputs: ["$border", "$breakfast", "$launch", "$dinner"],
-          },
-        },
-      },
-    },
-    {
-      $unwind: "$x",
-    },
-    {
-      $project: {
-        _id: false,
-        border: { $arrayElemAt: ["$x", 0] },
-        breakfast: { $arrayElemAt: ["$x", 1] },
-        launch: { $arrayElemAt: ["$x", 2] },
-        dinner: { $arrayElemAt: ["$x", 3] },
-        month: 1,
-      },
-    },
+    { $unwind: "$borders" },
+
     {
       $group: {
-        _id: "$month",
-        border: { $push: "$border" },
-        breakfast: { $push: "$breakfast" },
-        launch: { $push: "$launch" },
-        dinner: { $push: "$dinner" },
+        _id: {
+          month: "$month",
+          day: "$day",
+        },
+
+        totalBreakfast: { $sum: "$borders.breakfast.meal" },
+        totalLaunch: { $sum: "$borders.launch.meal" },
+        totalDinner: { $sum: "$borders.dinner.meal" },
+
+        totalMoney: { $sum: "$borders.money" },
+        totalShop: { $sum: "$borders.shop" },
+        totalExtraShop: { $sum: "$borders.extraShop" },
+      },
+    },
+
+    {
+      $sort: {
+        "_id.month": 1,
+        "_id.day": 1,
       },
     },
   ]);
-  console.log(monthlyMeals)
+
   res.status(200).json({
     status: "Success",
     monthlyMeals,
