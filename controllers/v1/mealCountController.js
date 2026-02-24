@@ -705,16 +705,21 @@ exports.updateExtraShopMoney = catchAsyncError(async (req, res, next) => {
 
 exports.getUserMonthlyStats = catchAsyncError(async (req, res) => {
   const user = req.user;
-  const { month, year } = req.params;
+  const currentMonth = new Date().getMonth() + 1;
 
+  const { month, year, day } = req.params;
+  const currentDay = new Date().getDate()
   const mealManagerId =
-    user.role === "admin" ? user._id : user.manager;
-
+  user.role === "admin" ? user._id : user.manager;
   const stats = await MealsModel.aggregate([
     {
       $match: {
         year: Number(year),
         month: Number(month),
+        day: {
+          $gte: 1,
+          $lte: Number(day),
+        },
         deleted: false,
         mealManager: new mongoose.Types.ObjectId(mealManagerId),
       },
