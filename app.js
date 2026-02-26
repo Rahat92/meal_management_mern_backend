@@ -15,6 +15,7 @@ const mealRouter = require("./routes/mealRoutes");
 const productCategoryRouter = require("./routes/productCategoryRoutes");
 const productTagRouter = require("./routes/productTagRouter");
 const morgan = require("morgan");
+const advanceMealSheetRouter = require("./routes/v2/advanceMealSheetRoutes");
 
 const app = express();
 app.use(morgan("dev"));
@@ -35,7 +36,7 @@ app.use("/api/v1/messages", messageRouter);
 app.use("/api/v2/meal", mealRouter); // Uncommented
 
 // advance mealsheetroute
-// app.use("/api/v2/advance-meal-sheet")
+app.use("/api/v2/advance-meal-sheet", advanceMealSheetRouter)
 
 // 404 Handler
 app.all("*", (req, res, next) => {

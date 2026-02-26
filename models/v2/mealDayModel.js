@@ -1,3 +1,4 @@
+const mongoose = require('mongoose')
 const mealDaySchema = new mongoose.Schema({
     mealMonth: {
         type: mongoose.Schema.Types.ObjectId,
@@ -13,8 +14,25 @@ const mealDaySchema = new mongoose.Schema({
     day: Number,
     month: Number,
     year: Number
-}, { timestamps: true });
+}, {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
 
 mealDaySchema.index({ mealMonth: 1, day: 1 }, { unique: true });
+mealDaySchema.virtual('borders', {
+    ref: 'User',
+    localField: '_id',
+    foreignField: 'user'
+})
 
-module.exports = mongoose.model("MealDay", mealDaySchema);
+mealDaySchema.pre(/^find/, function (next) {
+    this.populate({
+        path: 'meal',
+    });
+    next();
+});
+
+const MealDayModel = mongoose.model("MealDay", mealDaySchema);
+module.exports = MealDayModel;

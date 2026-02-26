@@ -1,3 +1,4 @@
+const mongoose = require('mongoose')
 const borderMealSchema = new mongoose.Schema({
     mealDay: {
         type: mongoose.Schema.Types.ObjectId,
@@ -11,7 +12,7 @@ const borderMealSchema = new mongoose.Schema({
         required: true,
         index: true
     },
-    
+
     breakfast: {
         meal: { type: Number, default: 0 },
         status: { type: String, default: "pending" },
@@ -36,4 +37,5 @@ const borderMealSchema = new mongoose.Schema({
 
 borderMealSchema.index({ mealDay: 1, user: 1 }, { unique: true });
 
-module.exports = mongoose.model("BorderMeal", borderMealSchema);
+const BorderMealModel = mongoose.model("BorderMeal", borderMealSchema);
+module.exports = BorderMealModel

@@ -22,8 +22,19 @@ const mealMonthSchema = new mongoose.Schema({
         enum: ["open", "closed"],
         default: "open"
     }
-}, { timestamps: true });
+}, {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
+
+mealMonthSchema.virtual('mealDays', {
+    ref: 'MealDay',
+    localField: '_id',
+    foreignField: 'mealMonth'
+})
 
 mealMonthSchema.index({ mealManager: 1, year: 1, month: 1 }, { unique: true });
 
-module.exports = mongoose.model("MealMonth", mealMonthSchema);
+const MealMonthModel = mongoose.model("MealMonth", mealMonthSchema);
+module.exports = MealMonthModel;

@@ -9,4 +9,5 @@ const depositSchema = new mongoose.Schema({
     reason: String
 }, { timestamps: true });
 
-module.exports = mongoose.model("Deposit", depositSchema);
+const DepositModel = mongoose.model("Deposit", depositSchema);
+module.exports = DepositModel;

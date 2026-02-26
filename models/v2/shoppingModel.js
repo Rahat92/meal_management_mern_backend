@@ -23,4 +23,5 @@ const shoppingSchema = new mongoose.Schema({
     }]
 }, { timestamps: true });
 
-module.exports = mongoose.model("Shopping", shoppingSchema);
+const ShoppingModel = mongoose.model("Shopping", shoppingSchema);
+module.exports = ShoppingModel;
