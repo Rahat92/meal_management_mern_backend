@@ -21,17 +21,12 @@ const mealDaySchema = new mongoose.Schema({
 });
 
 mealDaySchema.index({ mealMonth: 1, day: 1 }, { unique: true });
-mealDaySchema.virtual('borders', {
-    ref: 'User',
-    localField: '_id',
-    foreignField: 'user'
-})
 
-mealDaySchema.pre(/^find/, function (next) {
-    this.populate({
-        path: 'meal',
-    });
-    next();
+// ✅ Correct virtual
+mealDaySchema.virtual('borderMeals', {
+    ref: 'BorderMeal',
+    localField: '_id',
+    foreignField: 'mealDay'
 });
 
 const MealDayModel = mongoose.model("MealDay", mealDaySchema);

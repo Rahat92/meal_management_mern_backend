@@ -14,17 +14,17 @@ const borderMealSchema = new mongoose.Schema({
     },
 
     breakfast: {
-        meal: { type: Number, default: 0 },
+        meal: { type: Number, default: .5 },
         status: { type: String, default: "pending" },
         updatedBy: mongoose.Schema.Types.ObjectId
     },
     lunch: {
-        meal: { type: Number, default: 0 },
+        meal: { type: Number, default: 1 },
         status: { type: String, default: "pending" },
         updatedBy: mongoose.Schema.Types.ObjectId
     },
     dinner: {
-        meal: { type: Number, default: 0 },
+        meal: { type: Number, default: 1 },
         status: { type: String, default: "pending" },
         updatedBy: mongoose.Schema.Types.ObjectId
     },
