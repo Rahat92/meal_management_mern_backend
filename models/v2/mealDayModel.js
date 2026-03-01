@@ -28,6 +28,6 @@ mealDaySchema.virtual('borderMeals', {
     localField: '_id',
     foreignField: 'mealDay'
 });
-
+mealDaySchema.index({ year: 1, month: 1 });
 const MealDayModel = mongoose.model("MealDay", mealDaySchema);
 module.exports = MealDayModel;

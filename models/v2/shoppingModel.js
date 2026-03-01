@@ -24,5 +24,9 @@ const shoppingSchema = new mongoose.Schema({
     }]
 }, { timestamps: true });
 
+shoppingSchema.index({ category: 1 });
+shoppingSchema.index({ tags: 1 });
+shoppingSchema.index({ borderMeal: 1 });
+
 const ShoppingModel = mongoose.model("Shopping", shoppingSchema);
 module.exports = ShoppingModel;

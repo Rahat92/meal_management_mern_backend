@@ -1,9 +1,13 @@
 const express = require('express');
-const { createMealExpenseDetail } = require('../../controllers/v2/mealExpenseDetailController');
+const { createMealExpenseDetail, getExpenseSummary } = require('../../controllers/v2/mealExpenseDetailController');
 const router = express.Router();
-
+// /api/v2/meal-expense-details
 router
     .route('/')
     .post(createMealExpenseDetail);
+
+router
+    .route('/expense-summary')
+    .get(getExpenseSummary)
 const mealExpenseRouter = router;
 module.exports = mealExpenseRouter
