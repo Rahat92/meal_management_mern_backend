@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 const MealMonthModel = require("../../models/v2/MealMonthModel");
 const User = require("../../models/userModel");
 const BorderMealModel = require("../../models/v2/borderMealModel");
-const MealDayModel = require('../../models/v2/mealDayModel');
+const MealDayModel = require('../../models/v2/MealDayModel');
 
 exports.createMonthlySheet = async (req, res) => {
     try {
@@ -86,6 +86,19 @@ exports.createMonthlySheet = async (req, res) => {
 //         sheet
 //     });
 // };
+
+exports.getRowMonthSheet = async (req, res) => {
+    try {
+        const monthId = req.params.monthId;
+        const monthRowSheet = await MealMonthModel.find({ mealMonth: monthId })
+        res.status(200).json({
+            success: true,
+            monthRowSheet
+        })
+    } catch (err) {
+        console.log(err)
+    }
+}
 
 exports.getAdvanceMonthlySheet = async (req, res) => {
     try {
