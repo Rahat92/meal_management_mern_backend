@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 const MealMonthModel = require("../../models/v2/MealMonthModel");
 const User = require("../../models/userModel");
 const BorderMealModel = require("../../models/v2/borderMealModel");
-const MealDayModel = require('../../models/v2/MealDayModel');
+const MealDayModel = require('../../models/v2/mealDayModel');
 
 exports.createMonthlySheet = async (req, res) => {
     try {
@@ -103,8 +103,8 @@ exports.getRowMonthSheet = async (req, res) => {
 exports.getAdvanceMonthlySheet = async (req, res) => {
     try {
         const monthId = req.params.id;
-        const page = parseInt(req.query.page) || 2;
-        const limit = parseInt(req.query.limit) || 3;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
         const monthObjectId = new mongoose.Types.ObjectId(monthId);
@@ -151,6 +151,7 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
                     _id: "$user",
                     meals: {
                         $push: {
+                            id: "$_id",
                             mealDay: "$mealDay",
                             day: "$mealDayInfo.day",
                             month: "$mealDayInfo.month",

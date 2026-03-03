@@ -13,3 +13,23 @@ exports.entryBorderToSheet = async (req, res) => {
         borderSheet
     })
 }
+
+exports.updateBorderMeal = async(req,res) => {
+    console.log(req.body)
+    try{
+        const borderMealId = req.params.id;
+        console.log(borderMealId)
+        const borderMeal = await BorderMealModel.findByIdAndUpdate(borderMealId, {
+            $set: {
+                "lunch.meal": req.body.lunch.meal,
+            }
+        })
+        console.log(borderMeal)
+        res.status(200).json({
+            success: true,
+            borderMeal
+        })
+    }catch(err){
+        console.log(err)
+    }
+}
