@@ -104,12 +104,12 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
     try {
         const monthId = req.params.id;
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
+        const limit = parseInt(req.query.limit) || 3;
         const skip = (page - 1) * limit;
 
         const monthObjectId = new mongoose.Types.ObjectId(monthId);
 
-        // 🔹 Step 1: Get all MealDay IDs for this month
+        // Step 1: Get all MealDay IDs for this month
         const mealDays = await MealDayModel.find({ mealMonth: monthObjectId }).select("_id day").lean();
         const today = new Date().getDate();
         const currentDayIds = mealDays

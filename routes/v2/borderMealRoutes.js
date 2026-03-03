@@ -3,7 +3,7 @@ const { updateBorderMeal } = require('../../controllers/v2/borderMealController'
 const router = express.Router();
 
 router  
-    .route('/:id')
+    .route('/:mealDay')
     .patch(updateBorderMeal)
 
 const borderMealRouter = router;
