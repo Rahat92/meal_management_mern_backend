@@ -101,200 +101,190 @@ exports.getRowMonthSheet = async (req, res) => {
 }
 
 exports.getAdvanceMonthlySheet = async (req, res) => {
-    try {
-        const monthId = req.params.id;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 3;
-        const skip = (page - 1) * limit;
+  try {
+    const monthId = req.params.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-        const monthObjectId = new mongoose.Types.ObjectId(monthId);
-
-        // Step 1: Get all MealDay IDs for this month
-        const mealDays = await MealDayModel.find({ mealMonth: monthObjectId }).select("_id day").lean();
-        const today = new Date().getDate();
-        const currentDayIds = mealDays
-            .filter(d => {
-                return d.day <= today;
-            })
-            .map(d => d._id);
-        const dayIds = mealDays.map(d => d._id);
-
-        if (dayIds.length === 0) {
-            return res.status(200).json({
-                success: true,
-                totalUsers: 0,
-                totalPages: 0,
-                currentPage: page,
-                data: []
-            });
-        }
-
-        // 🔥 Step 2: Aggregate BorderMeals
-        const pipeline = [
-            {
-                $match: {
-                    mealDay: { $in: dayIds }
-                }
-            },
-            // Group meals by user
-            {
-                $lookup: {
-                    from: "mealdays",
-                    localField: "mealDay",
-                    foreignField: "_id",
-                    as: "mealDayInfo"
-                }
-            },
-            { $unwind: "$mealDayInfo" },
-            {
-                $group: {
-                    _id: "$user",
-                    meals: {
-                        $push: {
-                            id: "$_id",
-                            mealDay: "$mealDay",
-                            day: "$mealDayInfo.day",
-                            month: "$mealDayInfo.month",
-                            year: "$mealDayInfo.year",
-                            breakfast: "$breakfast.meal",
-                            lunch: "$lunch.meal",
-                            dinner: "$dinner.meal",
-                            deposit: "$money",
-                            mealExpense: "$shop"
-                        }
-                    },
-                    totalBreakfast: {
-                        $sum: {
-                            $cond: [
-                                { $in: ["$mealDay", currentDayIds] },
-                                "$breakfast.meal",
-                                0
-                            ]
-                        }
-                    },
-                    totalDeposit: {
-                        $sum: {
-                            $cond: [
-                                { $in: ["$mealDay", currentDayIds] },
-                                "$money",
-                                0
-                            ]
-                        }
-                    },
-                    totalMealExpense: {
-                        $sum: {
-                            $cond: [
-                                { $in: ["$mealDay", currentDayIds] },
-                                "$shop",
-                                0
-                            ]
-                        }
-                    },
-                    totalLunch: {
-                        $sum: {
-                            $cond: [
-                                { $in: ["$mealDay", currentDayIds] },
-                                "$lunch.meal",
-                                0
-                            ]
-                        }
-                    },
-                    totalDinner: {
-                        $sum: {
-                            $cond: [
-                                { $in: ["$mealDay", currentDayIds] },
-                                "$dinner.meal",
-                                0
-                            ]
-                        }
-                    },
-                }
-            },
-
-            // Count before pagination
-            {
-                $facet: {
-                    metadata: [{ $count: "totalUsers" }],
-                    users: [
-                        { $sort: { _id: 1 } },
-                        { $skip: skip },
-                        { $limit: limit },
-
-                        // Join user info
-                        {
-                            $lookup: {
-                                from: "users",
-                                localField: "_id",
-                                foreignField: "_id",
-                                as: "user"
-                            }
-                        },
-
-                        { $unwind: "$user" },
-                        // {
-                        //     $lookup: {
-                        //         from:"MealDay",
-                        //         localField:"mealDay",
-                        //         foreignField: "_id",
-                        //         as:"day"
-                        //     }
-                        // },
-                        // {$unwind: "$day"},
-
-                        {
-                            $project: {
-                                _id: 0,
-                                // date: "$day.date",
-                                userId: "$_id",
-                                name: "$user.name",
-                                email: "$user.email",
-                                meals: 1,
-                                totalBreakfast: 1,
-                                totalLunch: 1,
-                                totalDinner: 1,
-                                totalMeals: {
-                                    $add: [
-                                        "$totalBreakfast",
-                                        "$totalLunch",
-                                        "$totalDinner"
-                                    ]
-                                },
-                                totalDeposit: 1,
-                                totalMealExpense: 1
-                            }
-                        }
-                    ]
-                }
-            }
-        ];
-
-        const result = await BorderMealModel.aggregate(pipeline);
-
-        const totalUsers = result[0].metadata[0]?.totalUsers || 0;
-        const users = result[0].users;
-
-        res.status(200).json({
-            success: true,
-            totalUsers,
-            totalPages: Math.ceil(totalUsers / limit),
-            currentPage: page,
-            data: users
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to load monthly sheet"
-        });
+    if (!mongoose.Types.ObjectId.isValid(monthId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid month ID"
+      });
     }
-}
+
+    const monthObjectId = new mongoose.Types.ObjectId(monthId);
+
+    // ============================
+    // 1️⃣ GET ALL DAYS OF MONTH
+    // ============================
+    const mealDays = await MealDayModel
+      .find({ mealMonth: monthObjectId })
+      .select("_id day")
+      .lean();
+
+    if (!mealDays.length) {
+      return res.status(200).json({
+        success: true,
+        totalUsers: 0,
+        totalPages: 0,
+        currentPage: page,
+        dailyTotals: [],
+        data: []
+      });
+    }
+
+    const dayIds = mealDays.map(d => d._id);
+
+    // =========================================
+    // 2️⃣ USERS + PAGINATION (ONE FACET ONLY)
+    // =========================================
+    const usersAggregation = await BorderMealModel.aggregate([
+      { $match: { mealDay: { $in: dayIds } } },
+
+      {
+        $lookup: {
+          from: "mealdays",
+          localField: "mealDay",
+          foreignField: "_id",
+          as: "mealDayInfo"
+        }
+      },
+      { $unwind: "$mealDayInfo" },
+
+      {
+        $group: {
+          _id: "$user",
+
+          meals: {
+            $push: {
+              id: "$_id",
+              mealDay: "$mealDay",
+              day: "$mealDayInfo.day",
+              breakfast: { $ifNull: ["$breakfast.meal", 0] },
+              lunch: { $ifNull: ["$lunch.meal", 0] },
+              dinner: { $ifNull: ["$dinner.meal", 0] },
+              deposit: { $ifNull: ["$money", 0] },
+              mealExpense: { $ifNull: ["$shop", 0] }
+            }
+          },
+
+          totalBreakfast: { $sum: { $ifNull: ["$breakfast.meal", 0] } },
+          totalLunch: { $sum: { $ifNull: ["$lunch.meal", 0] } },
+          totalDinner: { $sum: { $ifNull: ["$dinner.meal", 0] } },
+          totalDeposit: { $sum: { $ifNull: ["$money", 0] } },
+          totalMealExpense: { $sum: { $ifNull: ["$shop", 0] } }
+        }
+      },
+
+      { $sort: { _id: 1 } },
+
+      {
+        $facet: {
+          metadata: [{ $count: "totalUsers" }],
+          data: [
+            { $skip: skip },
+            { $limit: limit },
+
+            {
+              $lookup: {
+                from: "users",
+                localField: "_id",
+                foreignField: "_id",
+                as: "user"
+              }
+            },
+            { $unwind: "$user" },
+
+            {
+              $project: {
+                _id: 0,
+                userId: "$_id",
+                name: "$user.name",
+                email: "$user.email",
+                meals: 1,
+                totalBreakfast: 1,
+                totalLunch: 1,
+                totalDinner: 1,
+                totalMeals: {
+                  $add: [
+                    "$totalBreakfast",
+                    "$totalLunch",
+                    "$totalDinner"
+                  ]
+                },
+                totalDeposit: 1,
+                totalMealExpense: 1
+              }
+            }
+          ]
+        }
+      }
+    ]);
+
+    const totalUsers =
+      usersAggregation[0]?.metadata[0]?.totalUsers || 0;
+
+    const users =
+      usersAggregation[0]?.data || [];
+
+    // =====================================
+    // 3️⃣ DAILY TOTALS (SEPARATE QUERY)
+    // =====================================
+    const dailyTotals = await BorderMealModel.aggregate([
+      { $match: { mealDay: { $in: dayIds } } },
+
+      {
+        $lookup: {
+          from: "mealdays",
+          localField: "mealDay",
+          foreignField: "_id",
+          as: "mealDayInfo"
+        }
+      },
+      { $unwind: "$mealDayInfo" },
+
+      {
+        $group: {
+          _id: "$mealDay",
+          day: { $first: "$mealDayInfo.day" },
+          totalBreakfast: { $sum: { $ifNull: ["$breakfast.meal", 0] } },
+          totalLunch: { $sum: { $ifNull: ["$lunch.meal", 0] } },
+          totalDinner: { $sum: { $ifNull: ["$dinner.meal", 0] } }
+        }
+      },
+
+      { $sort: { day: 1 } }
+    ]);
+
+    // ============================
+    // FINAL RESPONSE
+    // ============================
+    return res.status(200).json({
+      success: true,
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limit),
+      currentPage: page,
+      dailyTotals,
+      data: users
+    });
+
+  } catch (error) {
+    console.error("Monthly Sheet Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
 
 exports.getUserMonthlySheet = async (req, res) => {
     try {
-        const { year, month } = req.body;
+        const { year, month } = req.query;
+        
         const userId = new mongoose.Types.ObjectId(req.params.id);
-
+        console.log(userId, year, month)
         // 1️⃣ Find meal month
         const monthDoc = await MealMonthModel.findOne({
             year: parseInt(year),
@@ -379,18 +369,29 @@ exports.getUserMonthlySheet = async (req, res) => {
                     as: "shopping.tags"
                 }
             },
+            {
+                $lookup: {
+                    from: "mealdays",
+                    localField: "mealDay",
+                    foreignField: "_id",
+                    as: "mealDay"
+                }
+            },
+            { $unwind: "$mealDay" },
 
             // 🔹 Regroup shopping per BorderMeal
             {
                 $group: {
                     _id: "$_id",
                     user: { $first: "$user" },
-                    mealDay: { $first: "$mealDay" },
+                    mealDay: { $first: "$mealDay._id" },
+                    day: { $first: "$mealDay.day" },
                     breakfast: { $first: "$breakfast" },
                     lunch: { $first: "$lunch" },
                     dinner: { $first: "$dinner" },
                     money: { $first: "$money" },
                     shop: { $first: "$shop" },
+                    extraShop: { $first: "$extraShop" },
 
                     shopping: {
                         $push: {
@@ -414,11 +415,13 @@ exports.getUserMonthlySheet = async (req, res) => {
                     days: {
                         $push: {
                             mealDay: "$mealDay",
+                            day: "$day",
                             breakfast: "$breakfast.meal",
                             lunch: "$lunch.meal",
                             dinner: "$dinner.meal",
                             deposit: "$money",
                             mealExpense: "$shop",
+                            extraExpense: "$extraShop",
                             shopping: "$shopping"
                         }
                     },
