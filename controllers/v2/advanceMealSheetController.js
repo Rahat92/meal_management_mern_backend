@@ -431,7 +431,8 @@ exports.getUserMonthlySheet = async (req, res) => {
                     totalDinner: { $sum: "$dinner.meal" },
 
                     totalDeposit: { $sum: "$money" },
-                    totalMealExpense: { $sum: "$shop" }
+                    totalMealExpense: { $sum: "$shop" },
+                    totalExtraExpense: { $sum: "$extraShop" }
                 }
             },
 
@@ -444,6 +445,7 @@ exports.getUserMonthlySheet = async (req, res) => {
                     },
                     totalDeposit: 1,
                     totalMealExpense: 1,
+                    totalExtraExpense: 1,
                     balance: {
                         $subtract: ["$totalDeposit", "$totalMealExpense"]
                     }
