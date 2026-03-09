@@ -386,6 +386,8 @@ exports.getUserMonthlySheet = async (req, res) => {
                     user: { $first: "$user" },
                     mealDay: { $first: "$mealDay._id" },
                     day: { $first: "$mealDay.day" },
+                    year: {$first: "$mealDay.year"},
+                    month: { $first: "$mealDay.month" },
                     breakfast: { $first: "$breakfast" },
                     lunch: { $first: "$lunch" },
                     dinner: { $first: "$dinner" },
@@ -416,6 +418,8 @@ exports.getUserMonthlySheet = async (req, res) => {
                         $push: {
                             mealDay: "$mealDay",
                             day: "$day",
+                            year: "$year",
+                            month: "$month",
                             breakfast: "$breakfast.meal",
                             lunch: "$lunch.meal",
                             dinner: "$dinner.meal",
