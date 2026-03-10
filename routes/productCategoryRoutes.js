@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { createProductCategory, getProductCategories, deleteProductCategory, updateProductCategory, getExtraShoppingWithCategory, getMarketingWithCategory, getAProductCategory } = require('../controllers/v1/productCategoryController');
+const { protect, restrictedTo } = require("../controllers/v1/authController");
 
 router
     .route('/')
-    .get(getProductCategories)
+    .get(protect, getProductCategories)
     .post(createProductCategory)
 
 router

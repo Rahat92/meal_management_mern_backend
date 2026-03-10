@@ -1,0 +1,14 @@
+POST {{baseUrl}}/api/v1/users/login
+Content-Type: {{contentType}}
+
+{
+    "email":"roman@gmail.com",
+    "password":"roman1234"
+}
+
+> {%
+if (response.status == 200) {
+    // Save token globally
+    client.global.set("token", response.body.token); // or response.body.data.token
+}
+%}

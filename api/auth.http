@@ -1,0 +1,33 @@
+@baseUrl = http://localhost:5000
+@email = roman@gmail.com
+@password = roman1234
+
+### LOGIN
+# @name login
+POST {{baseUrl}}/api/v1/users/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### GET PRODUCT CATEGORIES
+GET {{baseUrl}}/api/v1/product-categories
+Authorization: Bearer {{login.response.body.token}}
+
+### CREATE MEAL EXPENSE DETAIL
+POST {{baseUrl}}/api/v2/meal-expense-details
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{
+  "borderMeal":"69a059226ca3adea43a135bb",
+  "type":"extra",
+  "productName":"ধনিয়া পাতা",
+  "productCount":1,
+  "unitPrice":10,
+  "category":"6992c633d4a0377f0dc1fffa",
+  "tags":[]
+}
+
