@@ -16,7 +16,7 @@ exports.createFood = catchAsyncError(async(req, res) => {
 
 exports.getFoods = catchAsyncError(async(req, res) => {
     const foods = await Food.find()
-    res.status(201).json({
+    res.status(200).json({
         status: 'Success',
         data: {
             foods
