@@ -1,5 +1,13 @@
 const express = require("express");
 const cors = require("cors");
+app.use(cors({
+  origin: [
+    "https://kikhaben.vercel.app",
+    "http://localhost:3000"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  credentials: true
+}));
 const cron = require('node-cron');
 const cookieParser = require("cookie-parser");
 const AppError = require("./utils/AppError");
@@ -23,14 +31,7 @@ const app = express();
 app.use(morgan("dev"));
 app.use("/public", express.static("public"));
 app.use(express.json());
-app.use(cors({
-  origin: [
-    "https://kikhaben.vercel.app",
-    "http://localhost:3000"
-  ],
-  methods: ["GET","POST","PUT","DELETE","PATCH"],
-  credentials: true
-}));
+
 app.use(cookieParser());
 
 // Routes
