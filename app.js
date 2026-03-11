@@ -1,5 +1,11 @@
 const express = require("express");
 const app = express();
+app.options("*", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "https://kikhaben.vercel.app");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.status(200).end();
+});
 const cors = require("cors");
 app.use(cors({
   origin: [
