@@ -24,9 +24,12 @@ app.use(morgan("dev"));
 app.use("/public", express.static("public"));
 app.use(express.json());
 app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  origin: [
+    "https://kikhaben.vercel.app",
+    "http://localhost:3000"
+  ],
+  methods: ["GET","POST","PUT","DELETE","PATCH"],
+  credentials: true
 }));
 app.use(cookieParser());
 
