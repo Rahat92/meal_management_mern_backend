@@ -23,7 +23,11 @@ const app = express();
 app.use(morgan("dev"));
 app.use("/public", express.static("public"));
 app.use(express.json());
-app.use(cors({ origin: "*" }));
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(cookieParser());
 
 // Routes
