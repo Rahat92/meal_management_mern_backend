@@ -1,4 +1,5 @@
 const express = require("express");
+const app = express();
 const cors = require("cors");
 app.use(cors({
   origin: [
@@ -27,19 +28,19 @@ const advanceMealSheetRouter = require("./routes/v2/advanceMealSheetRoutes");
 const mealExpenseRouter = require("./routes/v2/mealExpenseDetailRoutes");
 const borderMealRouter = require("./routes/v2/borderMealRoutes");
 
-const app = express();
+
 app.use(morgan("dev"));
 app.use("/public", express.static("public"));
 app.use(express.json());
 
 app.use(cookieParser());
-app.use((req,res,next)=>{
-  res.header("Access-Control-Allow-Origin","https://kikhaben.vercel.app");
-  res.header("Access-Control-Allow-Methods","GET,POST,PUT,DELETE,PATCH,OPTIONS");
-  res.header("Access-Control-Allow-Headers","Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials","true");
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "https://kikhaben.vercel.app");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
 
-  if(req.method === "OPTIONS"){
+  if (req.method === "OPTIONS") {
     return res.sendStatus(200);
   }
 
