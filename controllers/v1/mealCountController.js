@@ -213,7 +213,7 @@ exports.updateLunch = catchAsyncError(async (req, res) => {
   //   { _id: req.params.id },
   //   { $set: { [`launch.${req.body.borderIndex}`]: req.body.lunch } }
   // )
-  console.log(req.body)
+  console.log('here')
   const lunch = await MealsModel.updateOne(
     {
       _id: req.body.id,
