@@ -284,6 +284,12 @@ exports.getUserMonthlySheet = async (req, res) => {
         const { year, month } = req.query;
         
         const userId = new mongoose.Types.ObjectId(req.params.id);
+        if(!userId) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid user ID"
+            })
+        };
         console.log(userId, year, month)
         // 1️⃣ Find meal month
         const monthDoc = await MealMonthModel.findOne({
