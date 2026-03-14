@@ -4,7 +4,7 @@ const BorderMealModel = require('../../models/v2/borderMealModel');
 
 exports.createOrUpdateMealExpenseDetail = async (req, res) => {
   try {
-
+    console.log(req.body)
     const updatePromises = req.body.expenseDetails.map(async (item) => {
 
       const {
@@ -22,9 +22,7 @@ exports.createOrUpdateMealExpenseDetail = async (req, res) => {
       if (!borderMeal) return null;
 
       const filter = {
-        borderMeal: new mongoose.Types.ObjectId(borderMeal),
-        type,
-        productName
+        _id: item._id
       };
 
       // If product should be removed
@@ -37,7 +35,8 @@ exports.createOrUpdateMealExpenseDetail = async (req, res) => {
         filter,
         {
           $set: {
-            productCount: Number(productCount || 0),
+            productCount: productCount,
+            type: type,
             unitPrice: Number(unitPrice || 0),
             category,
             tags
@@ -53,12 +52,13 @@ exports.createOrUpdateMealExpenseDetail = async (req, res) => {
     });
 
     const updatedRecords = await Promise.all(updatePromises);
+    console.log('updatedRecords', updatedRecords);
     // update borderMeal total money
     await BorderMealModel.findByIdAndUpdate(
       updatedRecords[0].borderMeal,
       {
         $set: {
-          shop: updatedRecords.reduce((sum, record) => {
+          [req.body.type==='regular'?'shop':'extraShop']: updatedRecords.reduce((sum, record) => {
             if (record && !record.deleted) {
               return sum + Number(record.unitPrice || 0);
             }
