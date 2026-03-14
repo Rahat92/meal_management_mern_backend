@@ -104,7 +104,7 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
     try {
         const monthId = req.params.id;
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
+        const limit = parseInt(req.query.limit) || 2;
         const skip = (page - 1) * limit;
 
         if (!mongoose.Types.ObjectId.isValid(monthId)) {
@@ -290,7 +290,6 @@ exports.getUserMonthlySheet = async (req, res) => {
                 message: "Invalid user ID"
             })
         };
-        console.log(userId, year, month)
         // 1️⃣ Find meal month
         const monthDoc = await MealMonthModel.findOne({
             year: parseInt(year),
@@ -423,6 +422,7 @@ exports.getUserMonthlySheet = async (req, res) => {
                     days: {
                         $push: {
                             mealDay: "$mealDay",
+                            borderMealId: "$_id",
                             day: "$day",
                             year: "$year",
                             month: "$month",

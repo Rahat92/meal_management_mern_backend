@@ -11,6 +11,7 @@ const shoppingSchema = new mongoose.Schema({
         enum: ["regular", "extra"],
         required: true
     },
+    deleted: { type: Boolean, default: false },
     productName: String,
     productCount: String,
     unitPrice: Number,

@@ -1,21 +1,86 @@
 const mongoose = require('mongoose')
-const ShoppingModel = require("../../models/v2/shoppingModel")
+const ShoppingModel = require("../../models/v2/shoppingModel");
+const BorderMealModel = require('../../models/v2/borderMealModel');
 
-exports.createMealExpenseDetail = async(req,res) => {
-    const expenseDetail = await ShoppingModel.create({
-        borderMeal: req.body.borderMeal,
-        type: req.body.type,
-        productName: req.body.productName,
-        productCount: req.body.productCount,
-        unitPrice: req.body.unitPrice,
-        category: req.body.category,
-        tags: req.body.tags
-    })
-    res.status(201).json({
-        success: true,
-        expenseDetail
-    })
-}
+exports.createOrUpdateMealExpenseDetail = async (req, res) => {
+  try {
+
+    const updatePromises = req.body.expenseDetails.map(async (item) => {
+
+      const {
+        borderMeal,
+        type,
+        productName,
+        productCount,
+        unitPrice,
+        category,
+        tags,
+        removeProduct
+      } = item;
+
+      // Skip if borderMeal missing
+      if (!borderMeal) return null;
+
+      const filter = {
+        borderMeal: new mongoose.Types.ObjectId(borderMeal),
+        type,
+        productName
+      };
+
+      // If product should be removed
+      if (removeProduct) {
+        await ShoppingModel.deleteOne(filter);
+        return { deleted: true, productName };
+      }
+      console.log('filter', filter)
+      return ShoppingModel.findOneAndUpdate(
+        filter,
+        {
+          $set: {
+            productCount: Number(productCount || 0),
+            unitPrice: Number(unitPrice || 0),
+            category,
+            tags
+          }
+        },
+        {
+          new: true,
+          upsert: true,
+          runValidators: true
+        }
+      );
+
+    });
+
+    const updatedRecords = await Promise.all(updatePromises);
+    // update borderMeal total money
+    await BorderMealModel.findByIdAndUpdate(
+      updatedRecords[0].borderMeal,
+      {
+        $set: {
+          shop: updatedRecords.reduce((sum, record) => {
+            if (record && !record.deleted) {
+              return sum + Number(record.unitPrice || 0);
+            }
+            return sum;
+          }, 0)
+        }
+      }
+    );
+    res.status(200).json({
+      success: true,
+      data: updatedRecords.filter(Boolean)
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+};
 
 exports.getExpenseSummary = async (req, res) => {
   try {

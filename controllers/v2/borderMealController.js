@@ -16,7 +16,7 @@ exports.entryBorderToSheet = async (req, res) => {
 
 exports.updateBorderMeal = async(req,res) => {
     console.log(req.body)
-    const mealName = Object.keys(req.body)[2]
+    const mealName = Object.keys(req.body)[1]
     try{
         const borderMealId = req.params.mealDay;
         console.log(borderMealId)
