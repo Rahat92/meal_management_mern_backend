@@ -4,7 +4,8 @@ const BorderMealModel = require('../../models/v2/borderMealModel');
 
 exports.createOrUpdateMealExpenseDetail = async (req, res) => {
   try {
-    console.log(req.body)
+    console.log(req.body);
+
     const updatePromises = req.body.expenseDetails.map(async (item) => {
 
       const {
@@ -19,40 +20,38 @@ exports.createOrUpdateMealExpenseDetail = async (req, res) => {
         removeProduct
       } = item;
 
-      // Skip if borderMeal missing
-      if (!borderMeal) return null;
+      if (!borderMeal || !productName) return null;
 
-      let filter = {};
+      const isValidObjectId =
+        typeof id === "string" &&
+        mongoose.Types.ObjectId.isValid(id) &&
+        new mongoose.Types.ObjectId(id).toString() === id;
 
-      if (removeProduct !== true) {
+      console.log(`id ${id}`, isValidObjectId);
 
-        const isValidObjectId =
-          typeof id === "string" &&
-          mongoose.Types.ObjectId.isValid(id) &&
-          new mongoose.Types.ObjectId(id).toString() === id;
-
-        console.log(`id ${id}`, isValidObjectId);
-
-        if (isValidObjectId) {
-          filter = { _id: id };
-        } else {
-          // generate new _id for new document
-          filter = { _id: new mongoose.Types.ObjectId() };
-        }
-      }
-
-      // If product should be removed
+      // DELETE CASE
       if (removeProduct) {
-        await ShoppingModel.deleteOne(filter);
-        return { deleted: true, productName };
+        if (isValidObjectId) {
+          await ShoppingModel.deleteOne({ _id: id });
+        }
+        return { deleted: true, borderMeal };
       }
-      console.log('filter', filter)
-      return ShoppingModel.findOneAndUpdate(
+
+      // UPDATE / CREATE CASE
+      const filter = isValidObjectId
+        ? { _id: id }
+        : { _id: new mongoose.Types.ObjectId() };
+
+      console.log("filter", filter);
+
+      const newDoc = await ShoppingModel.findOneAndUpdate(
         filter,
         {
           $set: {
-            productCount: productCount,
-            type: type,
+            borderMeal,
+            productName,
+            productCount: Number(productCount || 0),
+            type,
             unitPrice: Number(unitPrice || 0),
             category,
             tags
@@ -65,30 +64,39 @@ exports.createOrUpdateMealExpenseDetail = async (req, res) => {
         }
       );
 
+      console.log("newDoc", newDoc);
+
+      return newDoc;
+
     });
 
     const updatedRecords = await Promise.all(updatePromises);
-    console.log('updatedRecords', updatedRecords.reduce((f, c) => {
-      if (c && !c.deleted) {
-        return f + c.unitPrice
-      }
-      return f
-    }, 0));
-    // update borderMeal total money
+    console.log("updatedRecords", updatedRecords);
+    const validRecords = updatedRecords.filter(r => r && !r.deleted);
 
-    await BorderMealModel.findByIdAndUpdate(
-      updatedRecords[0].borderMeal,
-      {
-        $set: {
-          [req.body.type === 'regular' ? 'shop' : 'extraShop']: updatedRecords.reduce((sum, record) => {
-            if (record && !record.deleted) {
-              return sum + Number(record.unitPrice || 0);
-            }
-            return sum;
-          }, 0)
+    // calculate total
+    const totalExpense = validRecords.reduce((sum, record) => {
+      return sum + Number(record.unitPrice || 0);
+    }, 0);
+
+    console.log("totalExpense", totalExpense);
+
+    // find borderMeal safely
+    const mealId =
+      validRecords[0]?.borderMeal ||
+      req.body.expenseDetails.find(e => e.borderMeal)?.borderMeal;
+
+    if (mealId) {
+      await BorderMealModel.findByIdAndUpdate(
+        mealId,
+        {
+          $set: {
+            [req.body.type === "regular" ? "shop" : "extraShop"]: totalExpense
+          }
         }
-      }
-    );
+      );
+    }
+
     res.status(200).json({
       success: true,
       data: updatedRecords.filter(Boolean)
