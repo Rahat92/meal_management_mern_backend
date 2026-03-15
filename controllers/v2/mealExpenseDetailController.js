@@ -8,6 +8,7 @@ exports.createOrUpdateMealExpenseDetail = async (req, res) => {
     const updatePromises = req.body.expenseDetails.map(async (item) => {
 
       const {
+        id,
         borderMeal,
         type,
         productName,
@@ -21,9 +22,24 @@ exports.createOrUpdateMealExpenseDetail = async (req, res) => {
       // Skip if borderMeal missing
       if (!borderMeal) return null;
 
-      const filter = {
-        _id: item._id
-      };
+      let filter = {};
+
+      if (removeProduct !== true) {
+
+        const isValidObjectId =
+          typeof id === "string" &&
+          mongoose.Types.ObjectId.isValid(id) &&
+          new mongoose.Types.ObjectId(id).toString() === id;
+
+        console.log(`id ${id}`, isValidObjectId);
+
+        if (isValidObjectId) {
+          filter = { _id: id };
+        } else {
+          // generate new _id for new document
+          filter = { _id: new mongoose.Types.ObjectId() };
+        }
+      }
 
       // If product should be removed
       if (removeProduct) {
@@ -52,13 +68,19 @@ exports.createOrUpdateMealExpenseDetail = async (req, res) => {
     });
 
     const updatedRecords = await Promise.all(updatePromises);
-    console.log('updatedRecords', updatedRecords);
+    console.log('updatedRecords', updatedRecords.reduce((f, c) => {
+      if (c && !c.deleted) {
+        return f + c.unitPrice
+      }
+      return f
+    }, 0));
     // update borderMeal total money
+
     await BorderMealModel.findByIdAndUpdate(
       updatedRecords[0].borderMeal,
       {
         $set: {
-          [req.body.type==='regular'?'shop':'extraShop']: updatedRecords.reduce((sum, record) => {
+          [req.body.type === 'regular' ? 'shop' : 'extraShop']: updatedRecords.reduce((sum, record) => {
             if (record && !record.deleted) {
               return sum + Number(record.unitPrice || 0);
             }
