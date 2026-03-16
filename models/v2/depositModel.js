@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const depositSchema = new mongoose.Schema({
     borderMeal: {
         type: mongoose.Schema.Types.ObjectId,

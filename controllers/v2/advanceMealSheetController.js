@@ -280,202 +280,190 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
 };
 
 exports.getUserMonthlySheet = async (req, res) => {
-    try {
-        const { year, month } = req.query;
+  try {
+    const { year, month } = req.query;
+    const userId = new mongoose.Types.ObjectId(req.params.id);
 
-        const userId = new mongoose.Types.ObjectId(req.params.id);
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid user ID"
-            })
-        };
-        // 1️⃣ Find meal month
-        const monthDoc = await MealMonthModel.findOne({
-            year: parseInt(year),
-            month: parseInt(month)
-        }).lean();
-
-        if (!monthDoc) {
-            return res.status(404).json({
-                success: false,
-                message: "Month not found"
-            });
-        }
-
-        // 2️⃣ Today cutoff (important)
-        const today = new Date();
-        const isCurrentMonth =
-            today.getFullYear() === parseInt(year) &&
-            today.getMonth() + 1 === parseInt(month);
-
-        const lastDay = isCurrentMonth
-            ? today.getDate()
-            : new Date(year, month, 0).getDate();
-        // 3️⃣ Get MealDay IDs till today
-        // const mealDays = await MealDayModel.find({
-        //     mealMonth: monthDoc._id,
-        //     day: { $lte: lastDay }
-        const mealDays = await MealDayModel.find({
-            mealMonth: monthDoc._id
-        }).select("_id day date").lean();
-
-        const dayIds = mealDays.map(d => d._id);
-
-        if (!dayIds.length) {
-            return res.json({ success: true, data: {} });
-        }
-
-        // 4️⃣ Aggregation
-        const result = await BorderMealModel.aggregate([
-
-            {
-                $match: {
-                    user: userId,
-                    mealDay: { $in: dayIds }
-                }
-            },
-
-            // 🔹 Lookup shopping
-            {
-                $lookup: {
-                    from: "shoppings",
-                    localField: "_id",
-                    foreignField: "borderMeal",
-                    as: "shopping"
-                }
-            },
-
-            { $unwind: { path: "$shopping", preserveNullAndEmptyArrays: true } },
-
-            // 🔹 Populate category
-            {
-                $lookup: {
-                    from: "productcategories",
-                    localField: "shopping.category",
-                    foreignField: "_id",
-                    as: "shopping.category"
-                }
-            },
-
-            {
-                $unwind: {
-                    path: "$shopping.category",
-                    preserveNullAndEmptyArrays: true
-                }
-            },
-
-            // 🔹 Populate tags
-            {
-                $lookup: {
-                    from: "productstags",
-                    localField: "shopping.tags",
-                    foreignField: "_id",
-                    as: "shopping.tags"
-                }
-            },
-            {
-                $lookup: {
-                    from: "mealdays",
-                    localField: "mealDay",
-                    foreignField: "_id",
-                    as: "mealDay"
-                }
-            },
-            { $unwind: "$mealDay" },
-
-            // 🔹 Regroup shopping per BorderMeal
-            {
-                $group: {
-                    _id: "$_id",
-                    user: { $first: "$user" },
-                    mealDay: { $first: "$mealDay._id" },
-                    day: { $first: "$mealDay.day" },
-                    year: { $first: "$mealDay.year" },
-                    month: { $first: "$mealDay.month" },
-                    breakfast: { $first: "$breakfast" },
-                    lunch: { $first: "$lunch" },
-                    dinner: { $first: "$dinner" },
-                    money: { $first: "$money" },
-                    shop: { $first: "$shop" },
-                    extraShop: { $first: "$extraShop" },
-
-                    shopping: {
-                        $push: {
-                            _id: "$shopping._id",
-                            productName: "$shopping.productName",
-                            productCount: "$shopping.productCount",
-                            unitPrice: "$shopping.unitPrice",
-                            type: "$shopping.type",
-                            category: "$shopping.category",
-                            tags: "$shopping.tags"
-                        }
-                    }
-                }
-            },
-
-            // 🔹 Final user grouping
-            {
-                $group: {
-                    _id: "$user",
-
-                    days: {
-                        $push: {
-                            mealDay: "$mealDay",
-                            borderMealId: "$_id",
-                            day: "$day",
-                            year: "$year",
-                            month: "$month",
-                            breakfast: "$breakfast.meal",
-                            lunch: "$lunch.meal",
-                            dinner: "$dinner.meal",
-                            deposit: "$money",
-                            mealExpense: "$shop",
-                            extraExpense: "$extraShop",
-                            shopping: "$shopping"
-                        }
-                    },
-
-                    totalBreakfast: { $sum: "$breakfast.meal" },
-                    totalLunch: { $sum: "$lunch.meal" },
-                    totalDinner: { $sum: "$dinner.meal" },
-
-                    totalDeposit: { $sum: "$money" },
-                    totalMealExpense: { $sum: "$shop" },
-                    totalExtraExpense: { $sum: "$extraShop" }
-                }
-            },
-
-            {
-                $project: {
-                    _id: 0,
-                    days: 1,
-                    totalMeals: {
-                        $add: ["$totalBreakfast", "$totalLunch", "$totalDinner"]
-                    },
-                    totalDeposit: 1,
-                    totalMealExpense: 1,
-                    totalExtraExpense: 1,
-                    balance: {
-                        $subtract: ["$totalDeposit", "$totalMealExpense"]
-                    }
-                }
-            }
-
-        ]);
-
-        res.json({
-            success: true,
-            data: result[0] || {}
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to load user monthly sheet"
-        });
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID"
+      });
     }
+
+    // 1️⃣ Find meal month
+    const monthDoc = await MealMonthModel.findOne({
+      year: parseInt(year),
+      month: parseInt(month)
+    }).lean();
+
+    if (!monthDoc) {
+      return res.status(404).json({
+        success: false,
+        message: "Month not found"
+      });
+    }
+
+    // 2️⃣ Today cutoff
+    const today = new Date();
+    const isCurrentMonth =
+      today.getFullYear() === parseInt(year) &&
+      today.getMonth() + 1 === parseInt(month);
+
+    const lastDay = isCurrentMonth
+      ? today.getDate()
+      : new Date(year, month, 0).getDate();
+
+    // 3️⃣ Get MealDay IDs
+    const mealDays = await MealDayModel.find({
+      mealMonth: monthDoc._id
+    })
+      .select("_id day date year month")
+      .lean();
+
+    const dayIds = mealDays.map(d => d._id);
+
+    if (!dayIds.length) {
+      return res.json({ success: true, data: {} });
+    }
+
+    // 4️⃣ Aggregation
+    const result = await BorderMealModel.aggregate([
+      {
+        $match: {
+          user: userId,
+          mealDay: { $in: dayIds }
+        }
+      },
+
+      // 🔹 Shopping lookup (with category + tags)
+      {
+        $lookup: {
+          from: "shoppings",
+          let: { borderMealId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$borderMeal", "$$borderMealId"] }
+              }
+            },
+            {
+              $lookup: {
+                from: "productcategories",
+                localField: "category",
+                foreignField: "_id",
+                as: "category"
+              }
+            },
+            { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+            {
+              $lookup: {
+                from: "productstags",
+                localField: "tags",
+                foreignField: "_id",
+                as: "tags"
+              }
+            }
+          ],
+          as: "shopping"
+        }
+      },
+
+      // 🔹 Deposit lookup
+      {
+        $lookup: {
+          from: "deposits",
+          let: { borderMealId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$borderMeal", "$$borderMealId"] }
+              }
+            }
+          ],
+          as: "depositDetails"
+        }
+      },
+
+      // 🔹 Meal day info
+      {
+        $lookup: {
+          from: "mealdays",
+          localField: "mealDay",
+          foreignField: "_id",
+          as: "mealDay"
+        }
+      },
+      { $unwind: "$mealDay" },
+
+      // 🔹 Group user days
+      {
+        $group: {
+          _id: "$user",
+
+          days: {
+            $push: {
+              mealDay: "$mealDay._id",
+              borderMealId: "$_id",
+              day: "$mealDay.day",
+              year: "$mealDay.year",
+              month: "$mealDay.month",
+
+              breakfast: "$breakfast.meal",
+              lunch: "$lunch.meal",
+              dinner: "$dinner.meal",
+
+              deposit: "$money",
+              mealExpense: "$shop",
+              extraExpense: "$extraShop",
+
+              shopping: "$shopping",
+              depositDetails: "$depositDetails"
+            }
+          },
+
+          totalBreakfast: { $sum: "$breakfast.meal" },
+          totalLunch: { $sum: "$lunch.meal" },
+          totalDinner: { $sum: "$dinner.meal" },
+
+          totalDeposit: { $sum: "$money" },
+          totalMealExpense: { $sum: "$shop" },
+          totalExtraExpense: { $sum: "$extraShop" }
+        }
+      },
+
+      {
+        $project: {
+          _id: 0,
+          days: 1,
+
+          totalMeals: {
+            $add: ["$totalBreakfast", "$totalLunch", "$totalDinner"]
+          },
+
+          totalDeposit: 1,
+          totalMealExpense: 1,
+          totalExtraExpense: 1,
+
+          balance: {
+            $subtract: ["$totalDeposit", "$totalMealExpense"]
+          }
+        }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      data: result[0] || {}
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to load user monthly sheet"
+    });
+  }
 };
 
 

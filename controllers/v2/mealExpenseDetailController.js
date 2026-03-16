@@ -27,7 +27,6 @@ exports.createOrUpdateMealExpenseDetail = async (req, res) => {
         mongoose.Types.ObjectId.isValid(id) &&
         new mongoose.Types.ObjectId(id).toString() === id;
 
-      console.log(`id ${id}`, isValidObjectId);
 
       // DELETE CASE
       if (removeProduct) {

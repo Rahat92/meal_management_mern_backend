@@ -31,3 +31,14 @@ Content-Type: application/json
   "tags":[]
 }
 
+### add deposit
+POST {{baseUrl}}/api/v2/deposits
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{
+  "borderMeal":"69a059226ca3adea43a135bb",
+  "amount":999,
+  "reason":"সাপ্তাহিক ডিপোজিট"
+}
+
