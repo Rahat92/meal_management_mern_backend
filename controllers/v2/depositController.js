@@ -76,6 +76,7 @@ exports.createOrUpdateDeposit = async (req, res) => {
     });
 
     const updatedRecords = await Promise.all(updatePromises);
+    console.log("updatedRecords", updatedRecords);
     const validRecords = updatedRecords.filter(r => r && !r.deleted);
 
     // calculate total
@@ -86,7 +87,7 @@ exports.createOrUpdateDeposit = async (req, res) => {
     // find borderMeal safely
     const mealId =
       validRecords[0]?.borderMeal ||
-      req.body.expenseDetails.find(e => e.borderMeal)?.borderMeal;
+      req.body.depositDetails.find(e => e.borderMeal)?.borderMeal;
 
     if (mealId) {
       await BorderMealModel.findByIdAndUpdate(
