@@ -305,7 +305,7 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
     try {
         const monthId = req.params.monthId;
         const page = parseInt(req.query.page) || 1;
-        const limit = Math.min(parseInt(req.query.limit) || 3, 50);
+        const limit = Math.min(parseInt(req.query.limit) || 30, 50);
         const skip = (page - 1) * limit;
 
         if (!mongoose.Types.ObjectId.isValid(monthId)) {
