@@ -100,11 +100,212 @@ exports.getRowMonthSheet = async (req, res) => {
     }
 }
 
+// exports.getAdvanceMonthlySheet = async (req, res) => {
+//     try {
+//         const monthId = req.params.monthId;
+//         const page = parseInt(req.query.page) || 1;
+//         const limit = parseInt(req.query.limit) || 100;
+//         const skip = (page - 1) * limit;
+
+//         if (!mongoose.Types.ObjectId.isValid(monthId)) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Invalid month ID"
+//             });
+//         }
+
+//         const monthObjectId = new mongoose.Types.ObjectId(monthId);
+
+//         // ============================
+//         // 1️⃣ GET ALL DAYS OF MONTH
+//         // ============================
+//         const mealMonth = await MealMonthModel.findById(monthObjectId);
+
+//         if (!mealMonth) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Meal month not found"
+//             });
+//         };
+//         // create date string with year month like February 2024;
+//         const dateStr = new Date(mealMonth.year, mealMonth.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+//         console.log("dateStr", dateStr)
+//         const mealDays = await MealDayModel
+//             .find({ mealMonth: monthObjectId })
+//             .select("_id day")
+//             .lean();
+
+//         if (!mealDays.length) {
+//             return res.status(200).json({
+//                 success: true,
+//                 totalUsers: 0,
+//                 totalPages: 0,
+//                 currentPage: page,
+//                 dailyTotals: [],
+//                 data: []
+//             });
+//         }
+
+//         const dayIds = mealDays.map(d => d._id);
+
+//         // =========================================
+//         // 2️⃣ USERS + PAGINATION (ONE FACET ONLY)
+//         // =========================================
+//         const usersAggregation = await BorderMealModel.aggregate([
+//             { $match: { mealDay: { $in: dayIds } } },
+
+//             {
+//                 $lookup: {
+//                     from: "mealdays",
+//                     localField: "mealDay",
+//                     foreignField: "_id",
+//                     as: "mealDayInfo"
+//                 }
+//             },
+//             { $unwind: "$mealDayInfo" },
+
+//             {
+//                 $group: {
+//                     _id: "$user",
+
+//                     meals: {
+//                         $push: {
+//                             id: "$_id",
+//                             mealDay: "$mealDay",
+//                             day: "$mealDayInfo.day",
+//                             breakfast: { $ifNull: ["$breakfast.meal", 0] },
+//                             lunch: { $ifNull: ["$lunch.meal", 0] },
+//                             dinner: { $ifNull: ["$dinner.meal", 0] },
+//                             deposit: { $ifNull: ["$money", 0] },
+//                             mealExpense: { $ifNull: ["$shop", 0] },
+//                             extraExpense: { $ifNull: ["$extraShop", 0] }
+//                         }
+//                     },
+
+//                     totalBreakfast: { $sum: { $ifNull: ["$breakfast.meal", 0] } },
+//                     totalLunch: { $sum: { $ifNull: ["$lunch.meal", 0] } },
+//                     totalDinner: { $sum: { $ifNull: ["$dinner.meal", 0] } },
+//                     totalDeposit: { $sum: { $ifNull: ["$money", 0] } },
+//                     totalMealExpense: { $sum: { $ifNull: ["$shop", 0] } },
+//                     totalExtraExpense: { $sum: { $ifNull: ["$extraShop", 0] } }
+//                 }
+//             },
+
+//             { $sort: { _id: 1 } },
+
+//             {
+//                 $facet: {
+//                     metadata: [{ $count: "totalUsers" }],
+//                     data: [
+//                         { $skip: skip },
+//                         { $limit: limit },
+
+//                         {
+//                             $lookup: {
+//                                 from: "users",
+//                                 localField: "_id",
+//                                 foreignField: "_id",
+//                                 as: "user"
+//                             }
+//                         },
+//                         { $unwind: "$user" },
+
+//                         {
+//                             $project: {
+//                                 _id: 0,
+//                                 userId: "$_id",
+//                                 name: "$user.name",
+//                                 email: "$user.email",
+//                                 meals: 1,
+//                                 totalBreakfast: 1,
+//                                 totalLunch: 1,
+//                                 totalDinner: 1,
+//                                 totalMeals: {
+//                                     $add: [
+//                                         "$totalBreakfast",
+//                                         "$totalLunch",
+//                                         "$totalDinner"
+//                                     ]
+//                                 },
+//                                 totalDeposit: 1,
+//                                 totalMealExpense: 1,
+//                                 totalExtraExpense: 1,
+//                                 balance: {
+//                                     $subtract: ["$totalDeposit", { $add: ["$totalMealExpense", "$totalExtraExpense"] }]
+//                                 }
+//                             }
+//                         }
+//                     ]
+//                 }
+//             }
+//         ]);
+
+//         const totalUsers =
+//             usersAggregation[0]?.metadata[0]?.totalUsers || 0;
+
+//         const users =
+//             usersAggregation[0]?.data || [];
+
+//         // =====================================
+//         // 3️⃣ DAILY TOTALS (SEPARATE QUERY)
+//         // =====================================
+//         const dailyTotals = await BorderMealModel.aggregate([
+//             { $match: { mealDay: { $in: dayIds } } },
+
+//             {
+//                 $lookup: {
+//                     from: "mealdays",
+//                     localField: "mealDay",
+//                     foreignField: "_id",
+//                     as: "mealDayInfo"
+//                 }
+//             },
+//             { $unwind: "$mealDayInfo" },
+
+//             {
+//                 $group: {
+//                     _id: "$mealDay",
+//                     day: { $first: "$mealDayInfo.day" },
+//                     totalBreakfast: { $sum: { $ifNull: ["$breakfast.meal", 0] } },
+//                     totalLunch: { $sum: { $ifNull: ["$lunch.meal", 0] } },
+//                     totalDinner: { $sum: { $ifNull: ["$dinner.meal", 0] } },
+//                     deposit: { $sum: { $ifNull: ["$money", 0] } },
+//                     mealExpense: { $sum: { $ifNull: ["$shop", 0] } },
+//                     extraExpense: { $sum: { $ifNull: ["$extraShop", 0] } },
+//                     overAllExpense: { $sum: { $add: [{ $ifNull: ["$shop", 0] }, { $ifNull: ["$extraShop", 0] }] } }
+//                 }
+//             },
+
+//             { $sort: { day: 1 } }
+//         ]);
+
+//         // ============================
+//         // FINAL RESPONSE
+//         // ============================
+//         return res.status(200).json({
+//             success: true,
+//             yearMonth: dateStr,
+//             totalUsers,
+//             totalPages: Math.ceil(totalUsers / limit),
+//             currentPage: page,
+//             dailyTotals,
+//             data: users
+//         });
+
+//     } catch (error) {
+//         console.error("Monthly Sheet Error:", error);
+//         return res.status(500).json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+// };
+
 exports.getAdvanceMonthlySheet = async (req, res) => {
     try {
-        const monthId = req.params.id;
+        const monthId = req.params.monthId;
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 2;
+        const limit = Math.min(parseInt(req.query.limit) || 3, 50);
         const skip = (page - 1) * limit;
 
         if (!mongoose.Types.ObjectId.isValid(monthId)) {
@@ -117,10 +318,28 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
         const monthObjectId = new mongoose.Types.ObjectId(monthId);
 
         // ============================
-        // 1️⃣ GET ALL DAYS OF MONTH
+        // 1️⃣ Month + Days
         // ============================
-        const mealDays = await MealDayModel
-            .find({ mealMonth: monthObjectId })
+        const mealMonth = await MealMonthModel.findById(monthObjectId).lean();
+
+        if (!mealMonth) {
+            return res.status(404).json({
+                success: false,
+                message: "Meal month not found"
+            });
+        }
+
+        const dateStr = new Date(
+            mealMonth.year,
+            mealMonth.month - 1
+        ).toLocaleString("default", {
+            month: "long",
+            year: "numeric"
+        });
+
+        const mealDays = await MealDayModel.find({
+            mealMonth: monthObjectId
+        })
             .select("_id day")
             .lean();
 
@@ -137,11 +356,15 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
 
         const dayIds = mealDays.map(d => d._id);
 
-        // =========================================
-        // 2️⃣ USERS + PAGINATION (ONE FACET ONLY)
-        // =========================================
-        const usersAggregation = await BorderMealModel.aggregate([
-            { $match: { mealDay: { $in: dayIds } } },
+        // ============================
+        // 2️⃣ SINGLE PIPELINE (FIXED)
+        // ============================
+        const result = await BorderMealModel.aggregate([
+            {
+                $match: {
+                    mealDay: { $in: dayIds }
+                }
+            },
 
             {
                 $lookup: {
@@ -154,36 +377,47 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
             { $unwind: "$mealDayInfo" },
 
             {
-                $group: {
-                    _id: "$user",
-
-                    meals: {
-                        $push: {
-                            id: "$_id",
-                            mealDay: "$mealDay",
-                            day: "$mealDayInfo.day",
-                            breakfast: { $ifNull: ["$breakfast.meal", 0] },
-                            lunch: { $ifNull: ["$lunch.meal", 0] },
-                            dinner: { $ifNull: ["$dinner.meal", 0] },
-                            deposit: { $ifNull: ["$money", 0] },
-                            mealExpense: { $ifNull: ["$shop", 0] }
-                        }
-                    },
-
-                    totalBreakfast: { $sum: { $ifNull: ["$breakfast.meal", 0] } },
-                    totalLunch: { $sum: { $ifNull: ["$lunch.meal", 0] } },
-                    totalDinner: { $sum: { $ifNull: ["$dinner.meal", 0] } },
-                    totalDeposit: { $sum: { $ifNull: ["$money", 0] } },
-                    totalMealExpense: { $sum: { $ifNull: ["$shop", 0] } }
-                }
-            },
-
-            { $sort: { _id: 1 } },
-
-            {
                 $facet: {
-                    metadata: [{ $count: "totalUsers" }],
-                    data: [
+                    // 🟢 total user count
+                    usersMeta: [
+                        {
+                            $group: {
+                                _id: "$user"
+                            }
+                        },
+                        { $count: "totalUsers" }
+                    ],
+
+                    // 🟢 paginated users
+                    usersData: [
+                        {
+                            $group: {
+                                _id: "$user",
+
+                                meals: {
+                                    $push: {
+                                        mealDay: "$mealDay",
+                                        day: "$mealDayInfo.day",
+                                        breakfast: { $ifNull: ["$breakfast.meal", 0] },
+                                        lunch: { $ifNull: ["$lunch.meal", 0] },
+                                        dinner: { $ifNull: ["$dinner.meal", 0] },
+                                        deposit: { $ifNull: ["$money", 0] },
+                                        expense: { $ifNull: ["$shop", 0] },
+                                        exExpense: { $ifNull: ["$extraShop", 0] }
+                                    }
+                                },
+
+                                totalBreakfast: { $sum: { $ifNull: ["$breakfast.meal", 0] } },
+                                totalLunch: { $sum: { $ifNull: ["$lunch.meal", 0] } },
+                                totalDinner: { $sum: { $ifNull: ["$dinner.meal", 0] } },
+
+                                totalDeposit: { $sum: { $ifNull: ["$money", 0] } },
+                                totalMealExpense: { $sum: { $ifNull: ["$shop", 0] } },
+                                totalExtraExpense: { $sum: { $ifNull: ["$extraShop", 0] } }
+                            }
+                        },
+
+                        { $sort: { _id: 1 } },
                         { $skip: skip },
                         { $limit: limit },
 
@@ -203,10 +437,9 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
                                 userId: "$_id",
                                 name: "$user.name",
                                 email: "$user.email",
+
                                 meals: 1,
-                                totalBreakfast: 1,
-                                totalLunch: 1,
-                                totalDinner: 1,
+
                                 totalMeals: {
                                     $add: [
                                         "$totalBreakfast",
@@ -214,60 +447,70 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
                                         "$totalDinner"
                                     ]
                                 },
+
                                 totalDeposit: 1,
-                                totalMealExpense: 1
+                                totalMealExpense: 1,
+                                totalExtraExpense: 1,
+
+                                balance: {
+                                    $subtract: [
+                                        "$totalDeposit",
+                                        {
+                                            $add: [
+                                                "$totalMealExpense",
+                                                "$totalExtraExpense"
+                                            ]
+                                        }
+                                    ]
+                                }
                             }
                         }
+                    ],
+                    // 🔵 daily totals
+                    dailyTotals: [
+                        {
+                            $group: {
+                                _id: "$mealDay",
+                                day: { $first: "$mealDayInfo.day" },
+
+                                totalBreakfast: { $sum: { $ifNull: ["$breakfast.meal", 0] } },
+                                totalLunch: { $sum: { $ifNull: ["$lunch.meal", 0] } },
+                                totalDinner: { $sum: { $ifNull: ["$dinner.meal", 0] } },
+
+                                deposit: { $sum: { $ifNull: ["$money", 0] } },
+
+                                mealExpense: { $sum: { $ifNull: ["$shop", 0] } },
+                                extraExpense: { $sum: { $ifNull: ["$extraShop", 0] } },
+
+                                overAllExpense: {
+                                    $sum: {
+                                        $add: [
+                                            { $ifNull: ["$shop", 0] },
+                                            { $ifNull: ["$extraShop", 0] }
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        { $sort: { day: 1 } }
                     ]
                 }
             }
         ]);
 
-        const totalUsers =
-            usersAggregation[0]?.metadata[0]?.totalUsers || 0;
-
-        const users =
-            usersAggregation[0]?.data || [];
-
-        // =====================================
-        // 3️⃣ DAILY TOTALS (SEPARATE QUERY)
-        // =====================================
-        const dailyTotals = await BorderMealModel.aggregate([
-            { $match: { mealDay: { $in: dayIds } } },
-
-            {
-                $lookup: {
-                    from: "mealdays",
-                    localField: "mealDay",
-                    foreignField: "_id",
-                    as: "mealDayInfo"
-                }
-            },
-            { $unwind: "$mealDayInfo" },
-
-            {
-                $group: {
-                    _id: "$mealDay",
-                    day: { $first: "$mealDayInfo.day" },
-                    totalBreakfast: { $sum: { $ifNull: ["$breakfast.meal", 0] } },
-                    totalLunch: { $sum: { $ifNull: ["$lunch.meal", 0] } },
-                    totalDinner: { $sum: { $ifNull: ["$dinner.meal", 0] } }
-                }
-            },
-
-            { $sort: { day: 1 } }
-        ]);
-
         // ============================
-        // FINAL RESPONSE
+        // 3️⃣ FINAL RESPONSE
         // ============================
+        const totalUsers = result[0].usersMeta[0]?.totalUsers || 0;
+        console.log(result[0].usersData)
         return res.status(200).json({
             success: true,
+            yearMonth: dateStr,
             totalUsers,
             totalPages: Math.ceil(totalUsers / limit),
             currentPage: page,
-            dailyTotals,
-            data: users
+            dailyTotals: result[0].dailyTotals || [],
+            data: result[0].usersData || []
         });
 
     } catch (error) {
@@ -278,192 +521,191 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
         });
     }
 };
-
 exports.getUserMonthlySheet = async (req, res) => {
-  try {
-    const { year, month } = req.query;
-    const userId = new mongoose.Types.ObjectId(req.params.id);
+    try {
+        const { year, month } = req.query;
+        const userId = new mongoose.Types.ObjectId(req.params.id);
 
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid user ID"
-      });
-    }
-
-    // 1️⃣ Find meal month
-    const monthDoc = await MealMonthModel.findOne({
-      year: parseInt(year),
-      month: parseInt(month)
-    }).lean();
-
-    if (!monthDoc) {
-      return res.status(404).json({
-        success: false,
-        message: "Month not found"
-      });
-    }
-
-    // 2️⃣ Today cutoff
-    const today = new Date();
-    const isCurrentMonth =
-      today.getFullYear() === parseInt(year) &&
-      today.getMonth() + 1 === parseInt(month);
-
-    const lastDay = isCurrentMonth
-      ? today.getDate()
-      : new Date(year, month, 0).getDate();
-
-    // 3️⃣ Get MealDay IDs
-    const mealDays = await MealDayModel.find({
-      mealMonth: monthDoc._id
-    })
-      .select("_id day date year month")
-      .lean();
-
-    const dayIds = mealDays.map(d => d._id);
-
-    if (!dayIds.length) {
-      return res.json({ success: true, data: {} });
-    }
-
-    // 4️⃣ Aggregation
-    const result = await BorderMealModel.aggregate([
-      {
-        $match: {
-          user: userId,
-          mealDay: { $in: dayIds }
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid user ID"
+            });
         }
-      },
 
-      // 🔹 Shopping lookup (with category + tags)
-      {
-        $lookup: {
-          from: "shoppings",
-          let: { borderMealId: "$_id" },
-          pipeline: [
+        // 1️⃣ Find meal month
+        const monthDoc = await MealMonthModel.findOne({
+            year: parseInt(year),
+            month: parseInt(month)
+        }).lean();
+
+        if (!monthDoc) {
+            return res.status(404).json({
+                success: false,
+                message: "Month not found"
+            });
+        }
+
+        // 2️⃣ Today cutoff
+        const today = new Date();
+        const isCurrentMonth =
+            today.getFullYear() === parseInt(year) &&
+            today.getMonth() + 1 === parseInt(month);
+
+        const lastDay = isCurrentMonth
+            ? today.getDate()
+            : new Date(year, month, 0).getDate();
+
+        // 3️⃣ Get MealDay IDs
+        const mealDays = await MealDayModel.find({
+            mealMonth: monthDoc._id
+        })
+            .select("_id day date year month")
+            .lean();
+
+        const dayIds = mealDays.map(d => d._id);
+
+        if (!dayIds.length) {
+            return res.json({ success: true, data: {} });
+        }
+
+        // 4️⃣ Aggregation
+        const result = await BorderMealModel.aggregate([
             {
-              $match: {
-                $expr: { $eq: ["$borderMeal", "$$borderMealId"] }
-              }
+                $match: {
+                    user: userId,
+                    mealDay: { $in: dayIds }
+                }
             },
+
+            // 🔹 Shopping lookup (with category + tags)
             {
-              $lookup: {
-                from: "productcategories",
-                localField: "category",
-                foreignField: "_id",
-                as: "category"
-              }
+                $lookup: {
+                    from: "shoppings",
+                    let: { borderMealId: "$_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: { $eq: ["$borderMeal", "$$borderMealId"] }
+                            }
+                        },
+                        {
+                            $lookup: {
+                                from: "productcategories",
+                                localField: "category",
+                                foreignField: "_id",
+                                as: "category"
+                            }
+                        },
+                        { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+                        {
+                            $lookup: {
+                                from: "productstags",
+                                localField: "tags",
+                                foreignField: "_id",
+                                as: "tags"
+                            }
+                        }
+                    ],
+                    as: "shopping"
+                }
             },
-            { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+
+            // 🔹 Deposit lookup
             {
-              $lookup: {
-                from: "productstags",
-                localField: "tags",
-                foreignField: "_id",
-                as: "tags"
-              }
-            }
-          ],
-          as: "shopping"
-        }
-      },
+                $lookup: {
+                    from: "deposits",
+                    let: { borderMealId: "$_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: { $eq: ["$borderMeal", "$$borderMealId"] }
+                            }
+                        }
+                    ],
+                    as: "depositDetails"
+                }
+            },
 
-      // 🔹 Deposit lookup
-      {
-        $lookup: {
-          from: "deposits",
-          let: { borderMealId: "$_id" },
-          pipeline: [
+            // 🔹 Meal day info
             {
-              $match: {
-                $expr: { $eq: ["$borderMeal", "$$borderMealId"] }
-              }
+                $lookup: {
+                    from: "mealdays",
+                    localField: "mealDay",
+                    foreignField: "_id",
+                    as: "mealDay"
+                }
+            },
+            { $unwind: "$mealDay" },
+
+            // 🔹 Group user days
+            {
+                $group: {
+                    _id: "$user",
+
+                    days: {
+                        $push: {
+                            mealDay: "$mealDay._id",
+                            borderMealId: "$_id",
+                            day: "$mealDay.day",
+                            year: "$mealDay.year",
+                            month: "$mealDay.month",
+
+                            breakfast: "$breakfast.meal",
+                            lunch: "$lunch.meal",
+                            dinner: "$dinner.meal",
+
+                            deposit: "$money",
+                            mealExpense: "$shop",
+                            extraExpense: "$extraShop",
+
+                            shopping: "$shopping",
+                            depositDetails: "$depositDetails"
+                        }
+                    },
+
+                    totalBreakfast: { $sum: "$breakfast.meal" },
+                    totalLunch: { $sum: "$lunch.meal" },
+                    totalDinner: { $sum: "$dinner.meal" },
+
+                    totalDeposit: { $sum: "$money" },
+                    totalMealExpense: { $sum: "$shop" },
+                    totalExtraExpense: { $sum: "$extraShop" }
+                }
+            },
+
+            {
+                $project: {
+                    _id: 0,
+                    days: 1,
+
+                    totalMeals: {
+                        $add: ["$totalBreakfast", "$totalLunch", "$totalDinner"]
+                    },
+
+                    totalDeposit: 1,
+                    totalMealExpense: 1,
+                    totalExtraExpense: 1,
+
+                    balance: {
+                        $subtract: ["$totalDeposit", "$totalMealExpense"]
+                    }
+                }
             }
-          ],
-          as: "depositDetails"
-        }
-      },
+        ]);
 
-      // 🔹 Meal day info
-      {
-        $lookup: {
-          from: "mealdays",
-          localField: "mealDay",
-          foreignField: "_id",
-          as: "mealDay"
-        }
-      },
-      { $unwind: "$mealDay" },
+        res.json({
+            success: true,
+            data: result[0] || {}
+        });
 
-      // 🔹 Group user days
-      {
-        $group: {
-          _id: "$user",
-
-          days: {
-            $push: {
-              mealDay: "$mealDay._id",
-              borderMealId: "$_id",
-              day: "$mealDay.day",
-              year: "$mealDay.year",
-              month: "$mealDay.month",
-
-              breakfast: "$breakfast.meal",
-              lunch: "$lunch.meal",
-              dinner: "$dinner.meal",
-
-              deposit: "$money",
-              mealExpense: "$shop",
-              extraExpense: "$extraShop",
-
-              shopping: "$shopping",
-              depositDetails: "$depositDetails"
-            }
-          },
-
-          totalBreakfast: { $sum: "$breakfast.meal" },
-          totalLunch: { $sum: "$lunch.meal" },
-          totalDinner: { $sum: "$dinner.meal" },
-
-          totalDeposit: { $sum: "$money" },
-          totalMealExpense: { $sum: "$shop" },
-          totalExtraExpense: { $sum: "$extraShop" }
-        }
-      },
-
-      {
-        $project: {
-          _id: 0,
-          days: 1,
-
-          totalMeals: {
-            $add: ["$totalBreakfast", "$totalLunch", "$totalDinner"]
-          },
-
-          totalDeposit: 1,
-          totalMealExpense: 1,
-          totalExtraExpense: 1,
-
-          balance: {
-            $subtract: ["$totalDeposit", "$totalMealExpense"]
-          }
-        }
-      }
-    ]);
-
-    res.json({
-      success: true,
-      data: result[0] || {}
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to load user monthly sheet"
-    });
-  }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to load user monthly sheet"
+        });
+    }
 };
 
 
@@ -599,6 +841,54 @@ exports.getShoppingReport = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to load shopping report"
+        });
+    }
+};
+
+
+exports.addUserToMonthSheet = async (req, res) => {
+    try {
+        const { monthId } = req.params;
+        const { userId } = req.body;
+        const month = await MealMonthModel.findById(monthId).populate('mealDays');
+        if (!month) {
+            return res.status(404).json({
+                success: false,
+                message: "Month sheet not found"
+            });
+        }
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+        const existingBorderMeal = await BorderMealModel.findOne({
+            user: userId,
+            mealDay: { $in: month.mealDays }
+        });
+        if (existingBorderMeal) {
+            return res.status(400).json({
+                success: false,
+                message: "User already added to this month sheet"
+            });
+        }
+        console.log(month)
+        const borderMeals = month.mealDays.map(mealDayId => ({
+            mealDay: mealDayId,
+            user: userId
+        }));
+        await BorderMealModel.insertMany(borderMeals);
+        res.status(200).json({
+            success: true,
+            message: "User added to month sheet successfully"
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to add user to month sheet"
         });
     }
 };
