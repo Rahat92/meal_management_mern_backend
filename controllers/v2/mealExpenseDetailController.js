@@ -115,75 +115,105 @@ exports.getExpenseSummary = async (req, res) => {
   try {
     const { year, month, category, tag, user } = req.query;
 
+    // 🔹 pagination params (only for recent)
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 3, 50);
+    const skip = (page - 1) * limit;
+
+    // ============================
+    // 🔹 Dynamic Filters
+    // ============================
     const matchShopping = {};
 
     if (category) {
-      matchShopping.category = new mongoose.Types.ObjectId(category);
+      const catIds = category.split(",").map(id => new mongoose.Types.ObjectId(id));
+      matchShopping.category = { $in: catIds };
     }
 
     if (tag) {
-      matchShopping.tags = new mongoose.Types.ObjectId(tag);
+      const tagIds = tag.split(",").map(id => new mongoose.Types.ObjectId(id));
+      matchShopping.tags = { $in: tagIds };
     }
 
     const pipeline = [
 
-      // 🔹 Filter category/tag first
       { $match: matchShopping },
 
-      // 🔹 Join BorderMeal
+      // 🔹 BorderMeal
       {
         $lookup: {
           from: "bordermeals",
-          localField: "borderMeal",
-          foreignField: "_id",
+          let: { borderMealId: "$borderMeal" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$_id", "$$borderMealId"] }
+              }
+            },
+            {
+              $project: {
+                user: 1,
+                mealDay: 1
+              }
+            }
+          ],
           as: "borderMeal"
         }
       },
       { $unwind: "$borderMeal" },
 
-      // 🔹 Filter user if provided
-      ...(user ? [{
-        $match: {
-          "borderMeal.user": new mongoose.Types.ObjectId(user)
-        }
-      }] : []),
+      ...(user
+        ? [{
+            $match: {
+              "borderMeal.user": new mongoose.Types.ObjectId(user)
+            }
+          }]
+        : []),
 
-      // 🔹 Join MealDay
+      // 🔹 MealDay
       {
         $lookup: {
           from: "mealdays",
-          localField: "borderMeal.mealDay",
-          foreignField: "_id",
+          let: { mealDayId: "$borderMeal.mealDay" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$_id", "$$mealDayId"] },
+                year: parseInt(year),
+                month: parseInt(month)
+              }
+            },
+            {
+              $project: {
+                date: 1,
+                day: 1
+              }
+            }
+          ],
           as: "mealDay"
         }
       },
       { $unwind: "$mealDay" },
 
-      // 🔹 Filter by month/year
-      {
-        $match: {
-          "mealDay.year": parseInt(year),
-          "mealDay.month": parseInt(month)
-        }
-      },
-
-      // 🔹 Calculate item total
+      // 🔹 Calculation
       {
         $addFields: {
           itemTotal: {
             $multiply: [
               "$unitPrice",
-              { $toDouble: { $substr: ["$productCount", 0, -2] } }
+              { $ifNull: ["$quantity", 1] }
             ]
           }
         }
       },
 
-      // 🔹 Use FACET to build whole dashboard at once
+      // ============================
+      // 🔥 FACET
+      // ============================
       {
         $facet: {
 
-          // 1️⃣ Summary Cards
+          // ✅ Summary (FULL DATA)
           summary: [
             {
               $group: {
@@ -194,7 +224,6 @@ exports.getExpenseSummary = async (req, res) => {
             }
           ],
 
-          // 2️⃣ Category Wise
           categorySummary: [
             {
               $group: {
@@ -215,13 +244,13 @@ exports.getExpenseSummary = async (req, res) => {
               $project: {
                 _id: 0,
                 name: "$category.name",
-                total: 1
+                categoryId: "$category._id",
+                total: 1,
               }
             },
             { $sort: { total: -1 } }
           ],
 
-          // 3️⃣ User Wise
           userSummary: [
             {
               $group: {
@@ -240,7 +269,8 @@ exports.getExpenseSummary = async (req, res) => {
             { $unwind: "$user" },
             {
               $project: {
-                _id: "$user._id",
+                _id: 0,
+                userId: "$user._id",
                 name: "$user.name",
                 total: 1
               }
@@ -248,7 +278,6 @@ exports.getExpenseSummary = async (req, res) => {
             { $sort: { total: -1 } }
           ],
 
-          // 4️⃣ Tag Wise
           tagSummary: [
             { $unwind: "$tags" },
             {
@@ -269,17 +298,20 @@ exports.getExpenseSummary = async (req, res) => {
             {
               $project: {
                 _id: 0,
-                name: "$tag.name",
+                tagName: "$tag.name",
+                tagId: "$tag._id",
                 total: 1
               }
             },
             { $sort: { total: -1 } }
           ],
 
-          // 5️⃣ Recent Transactions
-          recent: [
+          // 🔥 PAGINATED RECENT
+          recentData: [
             { $sort: { createdAt: -1 } },
-            { $limit: 10 },
+            { $skip: skip },
+            { $limit: limit },
+
             {
               $lookup: {
                 from: "users",
@@ -289,14 +321,33 @@ exports.getExpenseSummary = async (req, res) => {
               }
             },
             { $unwind: "$user" },
+
+            {
+              $lookup: {
+                from:"productcategories",
+                localField: "category",
+                foreignField: "_id",
+                as:"category"
+              }
+            },
+            {
+              $unwind:"$category"
+            },
             {
               $project: {
+                _id: 0,
                 date: "$mealDay.date",
                 product: "$productName",
+                category: "$category.name",
                 amount: "$itemTotal",
                 user: "$user.name"
               }
             }
+          ],
+
+          // 🔥 TOTAL COUNT FOR PAGINATION
+          recentCount: [
+            { $count: "total" }
           ]
         }
       }
@@ -304,9 +355,24 @@ exports.getExpenseSummary = async (req, res) => {
 
     const result = await ShoppingModel.aggregate(pipeline);
 
+    const data = result[0] || {};
+
+    const totalRecent = data.recentCount?.[0]?.total || 0;
+
     res.json({
       success: true,
-      data: result[0]
+
+      data: {
+        ...data,
+        recent: data.recentData || [],
+      },
+
+      pagination: {
+        total: totalRecent,
+        page,
+        limit,
+        totalPages: Math.ceil(totalRecent / limit)
+      }
     });
 
   } catch (error) {
