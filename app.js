@@ -20,6 +20,7 @@ const advanceMealSheetRouter = require("./routes/v2/advanceMealSheetRoutes");
 const mealExpenseRouter = require("./routes/v2/mealExpenseDetailRoutes");
 const borderMealRouter = require("./routes/v2/borderMealRoutes");
 const depositRouter = require("./routes/v2/depositRoutes");
+const mealYearMonthRouter = require("./routes/v2/yearMonthRoutes");
 
 const allowedOrigins = [
   "https://kikhaben.vercel.app",
@@ -63,6 +64,7 @@ app.use("/api/v2/meal", mealRouter);
 app.use("/api/v2/advance-meal-sheet", advanceMealSheetRouter);
 app.use("/api/v2/meal-expense-details", mealExpenseRouter);
 app.use("/api/v2/border-meal", borderMealRouter);
+app.use("/api/v2/year-months",mealYearMonthRouter)
 
 app.use("/api/v2/deposits", depositRouter);
 
