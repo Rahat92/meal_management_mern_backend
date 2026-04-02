@@ -80,24 +80,28 @@ exports.getRowMonthSheet = async (req, res) => {
 
 exports.getAdvanceMonthlySheet = async (req, res) => {
     try {
-        const monthId = req.params.monthId;
+        const mealManager = req.query.mealManager;
+        const year = req.query.year;
+        const month = req.query.month;
         const page = parseInt(req.query.page) || 1;
         const limit = Math.min(parseInt(req.query.limit) || 30, 50);
         const skip = (page - 1) * limit;
 
-        if (!mongoose.Types.ObjectId.isValid(monthId)) {
+        if (!mongoose.Types.ObjectId.isValid(mealManager)) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid month ID"
             });
         }
 
-        const monthObjectId = new mongoose.Types.ObjectId(monthId);
+        const mealManagerId = new mongoose.Types.ObjectId(mealManager);
 
         // ============================
         // 1️⃣ Month + Days
         // ============================
-        const mealMonth = await MealMonthModel.findById(monthObjectId).lean();
+        console.log(102, mealManagerId, year, month)
+        const mealMonth = await MealMonthModel.find({ mealManager: mealManagerId, year:Number(2026), month:Number(month) }).lean();
+        console.log(103, mealMonth)
 
         if (!mealMonth) {
             return res.status(404).json({
@@ -113,7 +117,8 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
             month: "long",
             year: "numeric"
         });
-
+        const monthObjectId = mealMonth[0]._id;
+        console.log('monthObjectId ', monthObjectId)
         const mealDays = await MealDayModel.find({
             mealMonth: monthObjectId
         })

@@ -8,7 +8,7 @@ router
     .post(protect, restrictedTo('admin'), createMonthlySheet)
 
 router
-    .route('/:monthId')
+    .route('/')
     .get(getAdvanceMonthlySheet)
 router
     .route('/row-month-sheet/:monthId')
