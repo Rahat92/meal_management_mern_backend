@@ -9,7 +9,6 @@ exports.createMonthlySheet = async (req, res) => {
         const { year, month } = req.body;
 
         const mealManager = req.user._id;
-
         const existing = await MealMonthModel.findOne({ mealManager, year, month });
         if (existing) {
             return res.status(400).json({
@@ -27,11 +26,9 @@ exports.createMonthlySheet = async (req, res) => {
         const daysInMonth = new Date(year, month, 0).getDate();
 
         const users = await User.find({
-            mealManager,
+            manager: mealManager,
             active: true,
-            role: "user"
         }).select("_id");
-
         for (let day = 1; day <= daysInMonth; day++) {
 
             const dateObj = new Date(year, month, day);
@@ -83,6 +80,7 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
         const mealManager = req.query.mealManager;
         const year = req.query.year;
         const month = req.query.month;
+        console.log(year, month)
         const page = parseInt(req.query.page) || 1;
         const limit = Math.min(parseInt(req.query.limit) || 30, 50);
         const skip = (page - 1) * limit;
@@ -99,11 +97,9 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
         // ============================
         // 1️⃣ Month + Days
         // ============================
-        console.log(102, mealManagerId, year, month)
         const mealMonth = await MealMonthModel.find({ mealManager: mealManagerId, year:Number(2026), month:Number(month) }).lean();
-        console.log(103, mealMonth)
-
-        if (!mealMonth) {
+        console.log(104, mealMonth)
+        if (!mealMonth || mealMonth.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: "Meal month not found"
@@ -118,7 +114,6 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
             year: "numeric"
         });
         const monthObjectId = mealMonth[0]._id;
-        console.log('monthObjectId ', monthObjectId)
         const mealDays = await MealDayModel.find({
             mealMonth: monthObjectId
         })
@@ -284,7 +279,6 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
         // 3️⃣ FINAL RESPONSE
         // ============================
         const totalUsers = result[0].usersMeta[0]?.totalUsers || 0;
-        console.log(result[0].usersData)
         return res.status(200).json({
             success: true,
             yearMonth: dateStr,
