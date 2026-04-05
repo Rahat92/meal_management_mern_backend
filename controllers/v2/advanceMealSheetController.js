@@ -7,7 +7,6 @@ const MealDayModel = require('../../models/v2/mealDayModel');
 exports.createMonthlySheet = async (req, res) => {
     try {
         const { year, month } = req.body;
-
         const mealManager = req.user._id;
         const existing = await MealMonthModel.findOne({ mealManager, year, month });
         if (existing) {

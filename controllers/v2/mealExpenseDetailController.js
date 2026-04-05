@@ -114,7 +114,6 @@ exports.createOrUpdateMealExpenseDetail = async (req, res) => {
 exports.getExpenseSummary = async (req, res) => {
   try {
     const { year, month, category, tag, user } = req.query;
-
     // 🔹 pagination params (only for recent)
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(parseInt(req.query.limit) || 3, 50);
