@@ -114,6 +114,7 @@ exports.createOrUpdateMealExpenseDetail = async (req, res) => {
 exports.getExpenseSummary = async (req, res) => {
   try {
     const { year, month, category, tag, user } = req.query;
+    console.log("Query Params:", req.query);
     // 🔹 pagination params (only for recent)
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(parseInt(req.query.limit) || 3, 50);
@@ -163,10 +164,10 @@ exports.getExpenseSummary = async (req, res) => {
 
       ...(user
         ? [{
-            $match: {
-              "borderMeal.user": new mongoose.Types.ObjectId(user)
-            }
-          }]
+          $match: {
+            "borderMeal.user": new mongoose.Types.ObjectId(user)
+          }
+        }]
         : []),
 
       // 🔹 MealDay
@@ -323,14 +324,14 @@ exports.getExpenseSummary = async (req, res) => {
 
             {
               $lookup: {
-                from:"productcategories",
+                from: "productcategories",
                 localField: "category",
                 foreignField: "_id",
-                as:"category"
+                as: "category"
               }
             },
             {
-              $unwind:"$category"
+              $unwind: "$category"
             },
             {
               $project: {

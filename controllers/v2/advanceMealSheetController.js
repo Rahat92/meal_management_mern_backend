@@ -96,7 +96,7 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
         // ============================
         // 1️⃣ Month + Days
         // ============================
-        const mealMonth = await MealMonthModel.find({ mealManager: mealManagerId, year:Number(2026), month:Number(month) }).lean();
+        const mealMonth = await MealMonthModel.find({ mealManager: mealManagerId, year: Number(2026), month: Number(month) }).lean();
         console.log(104, mealMonth)
         if (!mealMonth || mealMonth.length === 0) {
             return res.status(404).json({
