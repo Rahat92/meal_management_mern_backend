@@ -49,7 +49,7 @@ exports.createOrUpdateMealExpenseDetail = async (req, res) => {
           $set: {
             borderMeal,
             productName,
-            productCount: Number(productCount || 0),
+            productCount: productCount || "",
             type,
             unitPrice: Number(unitPrice || 0),
             category,
@@ -117,7 +117,7 @@ exports.getExpenseSummary = async (req, res) => {
     console.log("Query Params:", req.query);
     // 🔹 pagination params (only for recent)
     const page = parseInt(req.query.page) || 1;
-    const limit = Math.min(parseInt(req.query.limit) || 3, 50);
+    const limit = Math.min(parseInt(req.query.limit) || 50, 50);
     const skip = (page - 1) * limit;
 
     // ============================
@@ -340,6 +340,7 @@ exports.getExpenseSummary = async (req, res) => {
                 product: "$productName",
                 category: "$category.name",
                 amount: "$itemTotal",
+                quantity: "$productCount",
                 user: "$user.name"
               }
             }
