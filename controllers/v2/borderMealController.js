@@ -16,13 +16,13 @@ exports.entryBorderToSheet = async (req, res) => {
 
 exports.updateBorderMeal = async(req,res) => {
     console.log(req.body)
-    const mealName = Object.keys(req.body)[1]
+    const {mealName, userId, mealNumber} = req.body
     try{
         const borderMealId = req.params.mealDay;
         console.log(borderMealId)
-        const borderMeal = await BorderMealModel.updateOne({mealDay: borderMealId, user: req.body[mealName].user}, {
+        const borderMeal = await BorderMealModel.updateOne({mealDay: borderMealId, user: userId}, {
             $set: {
-                [`${mealName}.meal`]: req.body[mealName].meal,
+                [`${mealName}.meal`]: mealNumber,
             }
         })
         res.status(200).json({
