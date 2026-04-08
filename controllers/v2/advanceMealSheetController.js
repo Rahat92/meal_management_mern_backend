@@ -79,7 +79,7 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
         const mealManager = req.query.mealManager;
         const year = req.query.year;
         const month = req.query.month;
-    
+
         console.log("Query Params:", req.query);
         const page = parseInt(req.query.page) || 1;
         const limit = Math.min(parseInt(req.query.limit) || 30, 50);
@@ -131,7 +131,7 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
         }
 
         const dayIds = mealDays.map(d => d._id);
-
+        console.log("Meal Days Found:", mealDays.length);
         // ============================
         // 2️⃣ SINGLE PIPELINE (FIXED)
         // ============================

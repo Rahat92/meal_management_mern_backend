@@ -117,7 +117,7 @@ exports.getExpenseSummary = async (req, res) => {
     console.log("Query Params:", req.query);
     // 🔹 pagination params (only for recent)
     const page = parseInt(req.query.page) || 1;
-    const limit = Math.min(parseInt(req.query.limit) || 50, 50);
+    const limit = Math.min(parseInt(req.query.limit) || 1000, 50);
     const skip = (page - 1) * limit;
 
     // ============================
@@ -336,7 +336,7 @@ exports.getExpenseSummary = async (req, res) => {
             {
               $project: {
                 _id: 0,
-                date: "$mealDay.date",
+                date: "$createdAt",
                 product: "$productName",
                 category: "$category.name",
                 amount: "$itemTotal",
@@ -357,7 +357,7 @@ exports.getExpenseSummary = async (req, res) => {
     const result = await ShoppingModel.aggregate(pipeline);
 
     const data = result[0] || {};
-
+    console.log("Aggregation Result:", JSON.stringify(data, null, 2));
     const totalRecent = data.recentCount?.[0]?.total || 0;
 
     res.json({
