@@ -79,7 +79,8 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
         const mealManager = req.query.mealManager;
         const year = req.query.year;
         const month = req.query.month;
-        console.log(year, month)
+    
+        console.log("Query Params:", req.query);
         const page = parseInt(req.query.page) || 1;
         const limit = Math.min(parseInt(req.query.limit) || 30, 50);
         const skip = (page - 1) * limit;
@@ -97,21 +98,20 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
         // 1️⃣ Month + Days
         // ============================
         const mealMonth = await MealMonthModel.find({ mealManager: mealManagerId, year: Number(2026), month: Number(month) }).lean();
-        console.log(104, mealMonth)
         if (!mealMonth || mealMonth.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: "Meal month not found"
             });
         }
-
         const dateStr = new Date(
-            mealMonth.year,
-            mealMonth.month - 1
+            mealMonth[0].year,
+            mealMonth[0].month - 1
         ).toLocaleString("default", {
             month: "long",
             year: "numeric"
         });
+        console.log(dateStr, year)
         const monthObjectId = mealMonth[0]._id;
         const mealDays = await MealDayModel.find({
             mealMonth: monthObjectId
