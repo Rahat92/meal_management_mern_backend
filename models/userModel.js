@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema({
   },
   manager: {
     type: mongoose.Schema.ObjectId,
-    ref:'User',
+    ref: 'User',
     // required: [true, "Must have a meal manager"],
   },
   passwordResetToken: String,

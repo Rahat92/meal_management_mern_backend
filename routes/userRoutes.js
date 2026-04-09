@@ -1,7 +1,11 @@
 const express = require('express');
 const { signUp, logIn, protect, logOut, getBorders, sendMessage, forgotPassword, getBorder } = require('../controllers/v1/authController');
-const { get_all_managers } = require('../controllers/v1/userController');
+const { get_all_managers, get_all_users } = require('../controllers/v1/userController');
 const router = express.Router();
+
+router
+    .route('/')
+    .get(get_all_users)
 
 router
     .route('/register')
