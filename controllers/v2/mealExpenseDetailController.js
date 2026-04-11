@@ -117,7 +117,7 @@ exports.getExpenseSummary = async (req, res) => {
     console.log("Query Params:", req.query);
     // 🔹 pagination params (only for recent)
     const page = parseInt(req.query.page) || 1;
-    const limit = Math.min(parseInt(req.query.limit) || 1000, 50);
+    const limit = Math.min(parseInt(req.query.limit) || 5, 50);
     const skip = (page - 1) * limit;
 
     // ============================
