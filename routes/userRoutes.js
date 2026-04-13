@@ -18,7 +18,7 @@ router
 router
     .route('/login')
     .post(logIn)
-    
+
 router
     .route('/')
     .get(getBorders)
@@ -31,7 +31,7 @@ router
     .get(logOut)
 router
     .route('/forgot-password')
-    .post(forgotPassword)    
+    .post(forgotPassword)
 
 router
     .route('/:id')
