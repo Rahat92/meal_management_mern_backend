@@ -17,7 +17,7 @@ router
     .route('/user/:id')
     .get(getUserMonthlySheet)
 router
-    .route('/user-to-monthly-sheet/:monthId')
+    .route('/user-to-monthly-sheet')
     .post(protect, restrictedTo('admin'), addUserToMonthSheet)
 
 router

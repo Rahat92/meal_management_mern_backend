@@ -111,11 +111,286 @@ exports.createOrUpdateMealExpenseDetail = async (req, res) => {
   }
 };
 
+// exports.getExpenseSummary = async (req, res) => {
+//   try {
+//     const { year, month, category, tag, user } = req.query;
+//     console.log("Query Params:", req.query);
+//     // 🔹 pagination params (only for recent)
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = Math.min(parseInt(req.query.limit) || 1000, 50);
+//     const skip = (page - 1) * limit;
+
+//     // ============================
+//     // 🔹 Dynamic Filters
+//     // ============================
+//     const matchShopping = {};
+
+//     if (category) {
+//       const catIds = category.split(",").map(id => new mongoose.Types.ObjectId(id));
+//       matchShopping.category = { $in: catIds };
+//     }
+
+//     if (tag) {
+//       const tagIds = tag.split(",").map(id => new mongoose.Types.ObjectId(id));
+//       matchShopping.tags = { $in: tagIds };
+//     }
+
+//     const pipeline = [
+
+//       { $match: matchShopping },
+
+//       // 🔹 BorderMeal
+//       {
+//         $lookup: {
+//           from: "bordermeals",
+//           let: { borderMealId: "$borderMeal" },
+//           pipeline: [
+//             {
+//               $match: {
+//                 $expr: { $eq: ["$_id", "$$borderMealId"] }
+//               }
+//             },
+//             {
+//               $project: {
+//                 user: 1,
+//                 mealDay: 1
+//               }
+//             }
+//           ],
+//           as: "borderMeal"
+//         }
+//       },
+//       { $unwind: "$borderMeal" },
+
+//       ...(user
+//         ? [{
+//           $match: {
+//             "borderMeal.user": new mongoose.Types.ObjectId(user)
+//           }
+//         }]
+//         : []),
+
+//       // 🔹 MealDay
+//       {
+//         $lookup: {
+//           from: "mealdays",
+//           let: { mealDayId: "$borderMeal.mealDay" },
+//           pipeline: [
+//             {
+//               $match: {
+//                 $expr: { $eq: ["$_id", "$$mealDayId"] },
+//                 year: parseInt(year),
+//                 month: parseInt(month)
+//               }
+//             },
+//             {
+//               $project: {
+//                 date: 1,
+//                 day: 1
+//               }
+//             }
+//           ],
+//           as: "mealDay"
+//         }
+//       },
+//       { $unwind: "$mealDay" },
+
+//       // 🔹 Calculation
+//       {
+//         $addFields: {
+//           itemTotal: {
+//             $multiply: [
+//               "$unitPrice",
+//               { $ifNull: ["$quantity", 1] }
+//             ]
+//           }
+//         }
+//       },
+
+//       // ============================
+//       // 🔥 FACET
+//       // ============================
+//       {
+//         $facet: {
+
+//           // ✅ Summary (FULL DATA)
+//           summary: [
+//             {
+//               $group: {
+//                 _id: null,
+//                 totalExpense: { $sum: "$itemTotal" },
+//                 totalTransactions: { $sum: 1 }
+//               }
+//             }
+//           ],
+
+//           categorySummary: [
+//             {
+//               $group: {
+//                 _id: "$category",
+//                 total: { $sum: "$itemTotal" }
+//               }
+//             },
+//             {
+//               $lookup: {
+//                 from: "productcategories",
+//                 localField: "_id",
+//                 foreignField: "_id",
+//                 as: "category"
+//               }
+//             },
+//             { $unwind: "$category" },
+//             {
+//               $project: {
+//                 _id: 0,
+//                 name: "$category.name",
+//                 categoryId: "$category._id",
+//                 total: 1,
+//               }
+//             },
+//             { $sort: { total: -1 } }
+//           ],
+
+//           userSummary: [
+//             {
+//               $group: {
+//                 _id: "$borderMeal.user",
+//                 total: { $sum: "$itemTotal" }
+//               }
+//             },
+//             {
+//               $lookup: {
+//                 from: "users",
+//                 localField: "_id",
+//                 foreignField: "_id",
+//                 as: "user"
+//               }
+//             },
+//             { $unwind: "$user" },
+//             {
+//               $project: {
+//                 _id: 0,
+//                 userId: "$user._id",
+//                 name: "$user.name",
+//                 total: 1
+//               }
+//             },
+//             { $sort: { total: -1 } }
+//           ],
+
+//           tagSummary: [
+//             { $unwind: "$tags" },
+//             {
+//               $group: {
+//                 _id: "$tags",
+//                 total: { $sum: "$itemTotal" }
+//               }
+//             },
+//             {
+//               $lookup: {
+//                 from: "productstags",
+//                 localField: "_id",
+//                 foreignField: "_id",
+//                 as: "tag"
+//               }
+//             },
+//             { $unwind: "$tag" },
+//             {
+//               $project: {
+//                 _id: 0,
+//                 tagName: "$tag.name",
+//                 tagId: "$tag._id",
+//                 total: 1
+//               }
+//             },
+//             { $sort: { total: -1 } }
+//           ],
+
+//           // 🔥 PAGINATED RECENT
+//           recentData: [
+//             { $sort: { createdAt: -1 } },
+//             { $skip: skip },
+//             { $limit: limit },
+
+//             {
+//               $lookup: {
+//                 from: "users",
+//                 localField: "borderMeal.user",
+//                 foreignField: "_id",
+//                 as: "user"
+//               }
+//             },
+//             { $unwind: "$user" },
+
+//             {
+//               $lookup: {
+//                 from: "productcategories",
+//                 localField: "category",
+//                 foreignField: "_id",
+//                 as: "category"
+//               }
+//             },
+//             {
+//               $unwind: "$category"
+//             },
+//             {
+//               $project: {
+//                 _id: 0,
+//                 date: "$createdAt",
+//                 product: "$productName",
+//                 category: "$category.name",
+//                 amount: "$itemTotal",
+//                 quantity: "$productCount",
+//                 user: "$user.name"
+//               }
+//             }
+//           ],
+
+//           // 🔥 TOTAL COUNT FOR PAGINATION
+//           recentCount: [
+//             { $count: "total" }
+//           ]
+//         }
+//       }
+//     ];
+
+//     const result = await ShoppingModel.aggregate(pipeline);
+
+//     const data = result[0] || {};
+//     console.log("Aggregation Result:", JSON.stringify(data, null, 2));
+//     const totalRecent = data.recentCount?.[0]?.total || 0;
+
+//     res.json({
+//       success: true,
+
+//       data: {
+//         ...data,
+//         recent: data.recentData || [],
+//       },
+
+//       pagination: {
+//         total: totalRecent,
+//         page,
+//         limit,
+//         totalPages: Math.ceil(totalRecent / limit)
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to load expense summary"
+//     });
+//   }
+// };
+
+
+
 exports.getExpenseSummary = async (req, res) => {
   try {
     const { year, month, category, tag, user } = req.query;
-    console.log("Query Params:", req.query);
-    // 🔹 pagination params (only for recent)
+
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(parseInt(req.query.limit) || 1000, 50);
     const skip = (page - 1) * limit;
@@ -139,7 +414,9 @@ exports.getExpenseSummary = async (req, res) => {
 
       { $match: matchShopping },
 
-      // 🔹 BorderMeal
+      // ============================
+      // 🔥 BorderMeal + ACTIVE USER FILTER
+      // ============================
       {
         $lookup: {
           from: "bordermeals",
@@ -150,9 +427,36 @@ exports.getExpenseSummary = async (req, res) => {
                 $expr: { $eq: ["$_id", "$$borderMealId"] }
               }
             },
+
+            // 🔥 JOIN USER HERE
+            {
+              $lookup: {
+                from: "users",
+                let: { userId: "$user" },
+                pipeline: [
+                  {
+                    $match: {
+                      active: true,
+                      $expr: { $eq: ["$_id", "$$userId"] }
+                    }
+                  },
+                  {
+                    $project: {
+                      _id: 1,
+                      name: 1
+                    }
+                  }
+                ],
+                as: "userInfo"
+              }
+            },
+
+            { $unwind: "$userInfo" }, // ❗ removes inactive users
+
             {
               $project: {
-                user: 1,
+                user: "$userInfo._id",
+                userName: "$userInfo.name",
                 mealDay: 1
               }
             }
@@ -160,17 +464,21 @@ exports.getExpenseSummary = async (req, res) => {
           as: "borderMeal"
         }
       },
+
       { $unwind: "$borderMeal" },
 
+      // 🔹 Optional user filter (still works)
       ...(user
         ? [{
-          $match: {
-            "borderMeal.user": new mongoose.Types.ObjectId(user)
-          }
-        }]
+            $match: {
+              "borderMeal.user": new mongoose.Types.ObjectId(user)
+            }
+          }]
         : []),
 
+      // ============================
       // 🔹 MealDay
+      // ============================
       {
         $lookup: {
           from: "mealdays",
@@ -195,7 +503,9 @@ exports.getExpenseSummary = async (req, res) => {
       },
       { $unwind: "$mealDay" },
 
+      // ============================
       // 🔹 Calculation
+      // ============================
       {
         $addFields: {
           itemTotal: {
@@ -213,7 +523,6 @@ exports.getExpenseSummary = async (req, res) => {
       {
         $facet: {
 
-          // ✅ Summary (FULL DATA)
           summary: [
             {
               $group: {
@@ -245,7 +554,7 @@ exports.getExpenseSummary = async (req, res) => {
                 _id: 0,
                 name: "$category.name",
                 categoryId: "$category._id",
-                total: 1,
+                total: 1
               }
             },
             { $sort: { total: -1 } }
@@ -255,23 +564,15 @@ exports.getExpenseSummary = async (req, res) => {
             {
               $group: {
                 _id: "$borderMeal.user",
+                name: { $first: "$borderMeal.userName" },
                 total: { $sum: "$itemTotal" }
               }
             },
             {
-              $lookup: {
-                from: "users",
-                localField: "_id",
-                foreignField: "_id",
-                as: "user"
-              }
-            },
-            { $unwind: "$user" },
-            {
               $project: {
                 _id: 0,
-                userId: "$user._id",
-                name: "$user.name",
+                userId: "$_id",
+                name: 1,
                 total: 1
               }
             },
@@ -314,25 +615,14 @@ exports.getExpenseSummary = async (req, res) => {
 
             {
               $lookup: {
-                from: "users",
-                localField: "borderMeal.user",
-                foreignField: "_id",
-                as: "user"
-              }
-            },
-            { $unwind: "$user" },
-
-            {
-              $lookup: {
                 from: "productcategories",
                 localField: "category",
                 foreignField: "_id",
                 as: "category"
               }
             },
-            {
-              $unwind: "$category"
-            },
+            { $unwind: "$category" },
+
             {
               $project: {
                 _id: 0,
@@ -341,12 +631,11 @@ exports.getExpenseSummary = async (req, res) => {
                 category: "$category.name",
                 amount: "$itemTotal",
                 quantity: "$productCount",
-                user: "$user.name"
+                user: "$borderMeal.userName" // ✅ no extra lookup needed
               }
             }
           ],
 
-          // 🔥 TOTAL COUNT FOR PAGINATION
           recentCount: [
             { $count: "total" }
           ]
@@ -357,17 +646,14 @@ exports.getExpenseSummary = async (req, res) => {
     const result = await ShoppingModel.aggregate(pipeline);
 
     const data = result[0] || {};
-    console.log("Aggregation Result:", JSON.stringify(data, null, 2));
     const totalRecent = data.recentCount?.[0]?.total || 0;
 
     res.json({
       success: true,
-
       data: {
         ...data,
-        recent: data.recentData || [],
+        recent: data.recentData || []
       },
-
       pagination: {
         total: totalRecent,
         page,
