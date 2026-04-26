@@ -6,6 +6,12 @@ const productCategorySchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    bnName: {
+        type: String,
+        // required: true,
+        default: "",
+        unique: true
+    },
     createdAt: {
         type: Date,
         default: Date.now

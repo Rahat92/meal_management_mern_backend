@@ -24,8 +24,10 @@ exports.getAProductCategory = async (req, res) => {
 };
 exports.createProductCategory = async (req, res) => {
   try {
-    const { name } = req.body;
-    const newCategory = new ProductCategory({ name });
+    console.log(req.body)
+    const { name, bnName } = req.body;
+    console.log(name, bnName)
+    const newCategory = new ProductCategory({ name, bnName });
     await newCategory.save();
     res.status(201).json(newCategory);
   } catch (error) {

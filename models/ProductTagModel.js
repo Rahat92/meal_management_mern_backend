@@ -4,13 +4,11 @@ const productTagSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    nameEn: {
+    bnName: {
         type: String,
-        required: true
-    },
-    nameBn: {
-        type: String,
-        required: true
+        // required: true,
+        default: "",
+        unique: true
     },
     category: {
         type: mongoose.Schema.Types.ObjectId,

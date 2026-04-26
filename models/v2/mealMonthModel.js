@@ -17,6 +17,19 @@ const mealMonthSchema = new mongoose.Schema({
         required: true,
         index: true
     },
+    users: [
+        {
+            user: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+                required: true
+            },
+            active: {
+                type: Boolean,
+                default: true
+            }
+        }
+    ],
     status: {
         type: String,
         enum: ["open", "closed"],
