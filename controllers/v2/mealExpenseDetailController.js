@@ -157,7 +157,6 @@ exports.getExpenseSummary = async (req, res) => {
               }
             },
 
-            // 🔥 JOIN USER HERE
             {
               $lookup: {
                 from: "users",
@@ -199,10 +198,10 @@ exports.getExpenseSummary = async (req, res) => {
       // 🔹 Optional user filter (still works)
       ...(user
         ? [{
-            $match: {
-              "borderMeal.user": new mongoose.Types.ObjectId(user)
-            }
-          }]
+          $match: {
+            "borderMeal.user": new mongoose.Types.ObjectId(user)
+          }
+        }]
         : []),
 
       // ============================
