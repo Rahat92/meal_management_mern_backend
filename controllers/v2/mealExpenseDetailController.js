@@ -110,8 +110,8 @@ exports.createOrUpdateMealExpenseDetail = async (req, res) => {
   }
 };
 
-exports.getMealExpenses = async(req, res) => {
-  const mealExpenses = await ShoppingModel.find({productName: req.query.productName})
+exports.getMealExpenses = async (req, res) => {
+  const mealExpenses = await ShoppingModel.find({ productName: req.query.productName })
 }
 
 
@@ -398,3 +398,9 @@ exports.getExpenseSummary = async (req, res) => {
     });
   }
 };
+
+
+
+
+
+
