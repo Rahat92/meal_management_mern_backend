@@ -29,7 +29,8 @@ exports.createMonthlySheet = async (req, res) => {
         users?.forEach(async item => {
             await MealMonthUserModel.create({
                 user: item._id,
-                mealMonth: mealMonth._id
+                mealMonth: mealMonth._id,
+                manager: mealManager
             })
         })
         const daysInMonth = new Date(year, month, 0).getDate();
@@ -80,271 +81,6 @@ exports.getRowMonthSheet = async (req, res) => {
     }
 }
 
-// exports.getAdvanceMonthlySheet = async (req, res) => {
-//     try {
-//         const mealManager = req.query.mealManager;
-//         const year = req.query.year;
-//         const month = req.query.month;
-
-//         const page = parseInt(req.query.page) || 1;
-//         const limit = Math.min(parseInt(req.query.limit) || 30, 50);
-//         const skip = (page - 1) * limit;
-
-//         if (!mongoose.Types.ObjectId.isValid(mealManager)) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "Invalid meal manager ID"
-//             });
-//         }
-
-//         const mealManagerId = new mongoose.Types.ObjectId(mealManager);
-
-//         // ============================
-//         // 1️⃣ Month + Days
-//         // ============================
-//         const mealMonth = await MealMonthModel.findOne({
-//             mealManager: mealManagerId,
-//             year: Number(year),
-//             month: Number(month)
-//         }).lean();
-
-//         if (!mealMonth) {
-//             return res.status(404).json({
-//                 success: false,
-//                 message: "Meal month not found"
-//             });
-//         }
-
-//         const dateStr = new Date(
-//             mealMonth.year,
-//             mealMonth.month - 1
-//         ).toLocaleString("default", {
-//             month: "long",
-//             year: "numeric"
-//         });
-
-//         const mealDays = await MealDayModel.find({
-//             mealMonth: mealMonth._id
-//         })
-//             .select("_id day")
-//             .lean();
-
-//         if (!mealDays.length) {
-//             return res.status(200).json({
-//                 success: true,
-//                 totalUsers: 0,
-//                 totalPages: 0,
-//                 currentPage: page,
-//                 dailyTotals: [],
-//                 data: []
-//             });
-//         }
-
-//         const dayIds = mealDays.map(d => d._id);
-
-//         // ============================
-//         // 2️⃣ OPTIMIZED PIPELINE
-//         // ============================
-//         const result = await BorderMealModel.aggregate([
-
-//             {
-//                 $match: {
-//                     mealDay: { $in: dayIds }
-//                 }
-//             },
-
-//             // 🔥 USER LOOKUP WITH FILTER (FIXED)
-//             {
-//                 $lookup: {
-//                     from: "users",
-//                     let: { userId: "$user" },
-//                     pipeline: [
-//                         {
-//                             $match: {
-//                                 $expr: { $eq: ["$_id", "$$userId"] },
-//                                 manager: mealManagerId,
-//                             }
-//                         },
-//                         {
-//                             $project: {
-//                                 name: 1,
-//                                 email: 1
-//                             }
-//                         }
-//                     ],
-//                     as: "userInfo"
-//                 }
-//             },
-//             { $unwind: "$userInfo" },
-//             {
-//                 $lookup: {
-//                     from: "mealmonthusers",
-//                     let: { userId: "$user" },
-//                     pipeline: [
-//                         {
-//                             $match: {
-//                                 $expr: { $eq: ["$user", "$$userId"] },
-//                                 manager: mealManagerId,
-//                                 active: true
-//                             }
-//                         }
-//                     ],
-//                     as: "mealMonthUser"
-//                 }
-//             },
-//             { $unwind: "$mealMonthUser" },
-
-//             // 🔹 MealDay
-//             {
-//                 $lookup: {
-//                     from: "mealdays",
-//                     localField: "mealDay",
-//                     foreignField: "_id",
-//                     as: "mealDayInfo"
-//                 }
-//             },
-//             { $unwind: "$mealDayInfo" },
-
-//             {
-//                 $facet: {
-
-//                     // 🟢 TOTAL USERS
-//                     usersMeta: [
-//                         {
-//                             $group: {
-//                                 _id: "$user"
-//                             }
-//                         },
-//                         { $count: "totalUsers" }
-//                     ],
-
-//                     // 🟢 PAGINATED USERS
-//                     usersData: [
-//                         {
-//                             $group: {
-//                                 _id: "$user",
-
-//                                 user: { $first: "$userInfo" },
-//                                 mealMonthUser: {$first:"$mealMonthUser"},
-//                                 meals: {
-//                                     $push: {
-//                                         mealDay: "$mealDay",
-//                                         day: "$mealDayInfo.day",
-//                                         breakfast: { $ifNull: ["$breakfast.meal", 0] },
-//                                         lunch: { $ifNull: ["$lunch.meal", 0] },
-//                                         dinner: { $ifNull: ["$dinner.meal", 0] },
-//                                         deposit: { $ifNull: ["$money", 0] },
-//                                         expense: { $ifNull: ["$shop", 0] },
-//                                         exExpense: { $ifNull: ["$extraShop", 0] }
-//                                     }
-//                                 },
-
-//                                 totalBreakfast: { $sum: { $ifNull: ["$breakfast.meal", 0] } },
-//                                 totalLunch: { $sum: { $ifNull: ["$lunch.meal", 0] } },
-//                                 totalDinner: { $sum: { $ifNull: ["$dinner.meal", 0] } },
-
-//                                 totalDeposit: { $sum: { $ifNull: ["$money", 0] } },
-//                                 totalMealExpense: { $sum: { $ifNull: ["$shop", 0] } },
-//                                 totalExtraExpense: { $sum: { $ifNull: ["$extraShop", 0] } }
-//                             }
-//                         },
-
-//                         { $sort: { _id: 1 } },
-//                         { $skip: skip },
-//                         { $limit: limit },
-
-//                         {
-//                             $project: {
-//                                 _id: 0,
-//                                 userId: "$_id",
-//                                 name: "$user.name",
-//                                 email: "$user.email",
-
-//                                 meals: 1,
-
-//                                 totalMeals: {
-//                                     $add: [
-//                                         "$totalBreakfast",
-//                                         "$totalLunch",
-//                                         "$totalDinner"
-//                                     ]
-//                                 },
-
-//                                 totalDeposit: 1,
-//                                 totalMealExpense: 1,
-//                                 totalExtraExpense: 1,
-
-//                                 balance: {
-//                                     $subtract: [
-//                                         "$totalDeposit",
-//                                         {
-//                                             $add: [
-//                                                 "$totalMealExpense",
-//                                                 "$totalExtraExpense"
-//                                             ]
-//                                         }
-//                                     ]
-//                                 }
-//                             }
-//                         }
-//                     ],
-
-//                     // 🔵 DAILY TOTALS
-//                     dailyTotals: [
-//                         {
-//                             $group: {
-//                                 _id: "$mealDay",
-//                                 day: { $first: "$mealDayInfo.day" },
-
-//                                 totalBreakfast: { $sum: { $ifNull: ["$breakfast.meal", 0] } },
-//                                 totalLunch: { $sum: { $ifNull: ["$lunch.meal", 0] } },
-//                                 totalDinner: { $sum: { $ifNull: ["$dinner.meal", 0] } },
-
-//                                 deposit: { $sum: { $ifNull: ["$money", 0] } },
-
-//                                 mealExpense: { $sum: { $ifNull: ["$shop", 0] } },
-//                                 extraExpense: { $sum: { $ifNull: ["$extraShop", 0] } },
-
-//                                 overAllExpense: {
-//                                     $sum: {
-//                                         $add: [
-//                                             { $ifNull: ["$shop", 0] },
-//                                             { $ifNull: ["$extraShop", 0] }
-//                                         ]
-//                                     }
-//                                 }
-//                             }
-//                         },
-//                         { $sort: { day: 1 } }
-//                     ]
-//                 }
-//             }
-//         ]);
-
-//         // ============================
-//         // 3️⃣ RESPONSE
-//         // ============================
-//         const totalUsers = result[0]?.usersMeta[0]?.totalUsers || 0;
-
-//         return res.status(200).json({
-//             success: true,
-//             yearMonth: dateStr,
-//             totalUsers,
-//             totalPages: Math.ceil(totalUsers / limit),
-//             currentPage: page,
-//             dailyTotals: result[0]?.dailyTotals || [],
-//             data: result[0]?.usersData || []
-//         });
-
-//     } catch (error) {
-//         console.error("Monthly Sheet Error:", error);
-//         return res.status(500).json({
-//             success: false,
-//             message: error.message
-//         });
-//     }
-// };
-
 exports.getAdvanceMonthlySheet = async (req, res) => {
     try {
         const mealManager = req.query.mealManager;
@@ -352,7 +88,7 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
         const month = req.query.month;
 
         const page = parseInt(req.query.page) || 1;
-        const limit = Math.min(parseInt(req.query.limit) || 30, 50);
+        const limit = Math.min(parseInt(req.query.limit) || 10, 50);
         const skip = (page - 1) * limit;
 
         if (!mongoose.Types.ObjectId.isValid(mealManager)) {
@@ -418,7 +154,7 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
                 }
             },
 
-            // 🔥 USER LOOKUP WITH FILTER
+            // 🔥 USER LOOKUP WITH FILTER (FIXED)
             {
                 $lookup: {
                     from: "users",
@@ -428,7 +164,6 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
                             $match: {
                                 $expr: { $eq: ["$_id", "$$userId"] },
                                 manager: mealManagerId,
-                                // active:true
                             }
                         },
                         {
@@ -442,8 +177,6 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
                 }
             },
             { $unwind: "$userInfo" },
-
-            // ✅ FIX: Removed active:true filter + preserveNullAndEmptyArrays
             {
                 $lookup: {
                     from: "mealmonthusers",
@@ -453,16 +186,14 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
                             $match: {
                                 $expr: { $eq: ["$user", "$$userId"] },
                                 manager: mealManagerId,
-                                active: true  // ✅ keep this
+                                active: true
                             }
                         }
                     ],
                     as: "mealMonthUser"
                 }
             },
-            // ✅ FIX: preserve nulls first, then explicitly reject inactive users
-            { $unwind: { path: "$mealMonthUser", preserveNullAndEmptyArrays: true } },
-            { $match: { "mealMonthUser": { $ne: null } } },
+            { $unwind: "$mealMonthUser" },
 
             // 🔹 MealDay
             {
@@ -495,7 +226,7 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
                                 _id: "$user",
 
                                 user: { $first: "$userInfo" },
-                                mealMonthUser: { $first: "$mealMonthUser" },
+                                mealMonthUser: {$first:"$mealMonthUser"},
                                 meals: {
                                     $push: {
                                         mealDay: "$mealDay",
@@ -529,7 +260,6 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
                                 userId: "$_id",
                                 name: "$user.name",
                                 email: "$user.email",
-                                active: "$mealMonthUser.active", // ✅ now included
 
                                 meals: 1,
 
@@ -615,6 +345,262 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
         });
     }
 };
+
+// exports.getAdvanceMonthlySheet = async (req, res) => {
+//   try {
+//     const mealManager = req.query.mealManager;
+//     const year = Number(req.query.year);
+//     const month = Number(req.query.month);
+
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = Math.min(parseInt(req.query.limit) || 30, 50);
+//     const skip = (page - 1) * limit;
+
+//     if (!mongoose.Types.ObjectId.isValid(mealManager)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid meal manager ID"
+//       });
+//     }
+
+//     const mealManagerId = new mongoose.Types.ObjectId(mealManager);
+
+//     // ============================
+//     // 1️⃣ GET MONTH
+//     // ============================
+//     const mealMonth = await MealMonthModel.findOne({
+//       mealManager: mealManagerId,
+//       year,
+//       month
+//     }).lean();
+
+//     if (!mealMonth) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Meal month not found"
+//       });
+//     }
+
+//     const dateStr = new Date(year, month - 1).toLocaleString("default", {
+//       month: "long",
+//       year: "numeric"
+//     });
+
+//     // ============================
+//     // 2️⃣ PIPELINE (FIXED)
+//     // ============================
+//     const result = await BorderMealModel.aggregate([
+
+//       // 🔥 JOIN MealDay FIRST (IMPORTANT)
+//       {
+//         $lookup: {
+//           from: "mealdays",
+//           localField: "mealDay",
+//           foreignField: "_id",
+//           as: "mealDayInfo"
+//         }
+//       },
+
+//       // ❗ KEEP EVEN IF BROKEN DATA
+//       {
+//         $unwind: {
+//           path: "$mealDayInfo",
+//           preserveNullAndEmptyArrays: true
+//         }
+//       },
+
+//       // ✅ FILTER BY YEAR + MONTH (REAL FILTER)
+//       {
+//         $match: {
+//           "mealDayInfo.year": year,
+//           "mealDayInfo.month": month
+//         }
+//       },
+
+//       // ============================
+//       // 🔹 USER INFO
+//       // ============================
+//       {
+//         $lookup: {
+//           from: "users",
+//           localField: "user",
+//           foreignField: "_id",
+//           as: "userInfo"
+//         }
+//       },
+//       { $unwind: "$userInfo" },
+
+//       // ============================
+//       // 🔹 MealMonthUser (NO DROP)
+//       // ============================
+//       {
+//         $lookup: {
+//           from: "mealmonthusers",
+//           let: { userId: "$user" },
+//           pipeline: [
+//             {
+//               $match: {
+//                 $expr: { $eq: ["$user", "$$userId"] },
+//                 manager: mealManagerId
+//               }
+//             }
+//           ],
+//           as: "mealMonthUser"
+//         }
+//       },
+
+//       // ✅ SAFE ACTIVE FLAG
+//       {
+//         $addFields: {
+//           isActive: {
+//             $cond: [
+//               { $gt: [{ $size: "$mealMonthUser" }, 0] },
+//               { $arrayElemAt: ["$mealMonthUser.active", 0] },
+//               true
+//             ]
+//           }
+//         }
+//       },
+
+//       // ============================
+//       // 🔥 FACET
+//       // ============================
+//       {
+//         $facet: {
+
+//           // ✅ ONLY ACTIVE USERS COUNT
+//           usersMeta: [
+//             { $match: { isActive: true } },
+//             { $group: { _id: "$user" } },
+//             { $count: "totalUsers" }
+//           ],
+
+//           // ✅ USER DATA
+//           usersData: [
+//             { $match: { isActive: true } },
+
+//             {
+//               $group: {
+//                 _id: "$user",
+//                 user: { $first: "$userInfo" },
+
+//                 meals: {
+//                   $push: {
+//                     mealDay: "$mealDay", // ✅ ALWAYS PRESENT
+//                     day: "$mealDayInfo.day",
+
+//                     breakfast: { $ifNull: ["$breakfast.meal", 0] },
+//                     lunch: { $ifNull: ["$lunch.meal", 0] },
+//                     dinner: { $ifNull: ["$dinner.meal", 0] },
+
+//                     deposit: { $ifNull: ["$money", 0] },
+//                     expense: { $ifNull: ["$shop", 0] },
+//                     exExpense: { $ifNull: ["$extraShop", 0] }
+//                   }
+//                 },
+
+//                 totalBreakfast: { $sum: { $ifNull: ["$breakfast.meal", 0] } },
+//                 totalLunch: { $sum: { $ifNull: ["$lunch.meal", 0] } },
+//                 totalDinner: { $sum: { $ifNull: ["$dinner.meal", 0] } },
+
+//                 totalDeposit: { $sum: { $ifNull: ["$money", 0] } },
+//                 totalMealExpense: { $sum: { $ifNull: ["$shop", 0] } },
+//                 totalExtraExpense: { $sum: { $ifNull: ["$extraShop", 0] } }
+//               }
+//             },
+
+//             { $sort: { _id: 1 } },
+//             { $skip: skip },
+//             { $limit: limit },
+
+//             {
+//               $project: {
+//                 _id: 0,
+//                 userId: "$_id",
+//                 name: "$user.name",
+//                 email: "$user.email",
+
+//                 meals: 1,
+
+//                 totalMeals: {
+//                   $add: [
+//                     "$totalBreakfast",
+//                     "$totalLunch",
+//                     "$totalDinner"
+//                   ]
+//                 },
+
+//                 totalDeposit: 1,
+//                 totalMealExpense: 1,
+//                 totalExtraExpense: 1,
+
+//                 balance: {
+//                   $subtract: [
+//                     "$totalDeposit",
+//                     {
+//                       $add: [
+//                         "$totalMealExpense",
+//                         "$totalExtraExpense"
+//                       ]
+//                     }
+//                   ]
+//                 }
+//               }
+//             }
+//           ],
+
+//           // ✅ DAILY TOTALS (NEVER BREAKS)
+//           dailyTotals: [
+//             {
+//               $group: {
+//                 _id: "$mealDay",
+//                 day: { $first: "$mealDayInfo.day" },
+
+//                 totalBreakfast: { $sum: { $ifNull: ["$breakfast.meal", 0] } },
+//                 totalLunch: { $sum: { $ifNull: ["$lunch.meal", 0] } },
+//                 totalDinner: { $sum: { $ifNull: ["$dinner.meal", 0] } },
+
+//                 deposit: { $sum: { $ifNull: ["$money", 0] } },
+
+//                 mealExpense: { $sum: { $ifNull: ["$shop", 0] } },
+//                 extraExpense: { $sum: { $ifNull: ["$extraShop", 0] } },
+
+//                 overAllExpense: {
+//                   $sum: {
+//                     $add: [
+//                       { $ifNull: ["$shop", 0] },
+//                       { $ifNull: ["$extraShop", 0] }
+//                     ]
+//                   }
+//                 }
+//               }
+//             },
+//             { $sort: { day: 1 } }
+//           ]
+//         }
+//       }
+//     ]);
+
+//     const totalUsers = result[0]?.usersMeta?.[0]?.totalUsers || 0;
+//     console.log(result[0])
+//     return res.json({
+//       success: true,
+//       yearMonth: dateStr,
+//       totalUsers,
+//       totalPages: Math.ceil(totalUsers / limit),
+//       currentPage: page,
+//       dailyTotals: result[0]?.dailyTotals || [],
+//       data: result[0]?.usersData || []
+//     });
+
+//   } catch (error) {
+//     console.error("Monthly Sheet Error:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// };
 
 exports.getUserMonthlySheet = async (req, res) => {
     try {
