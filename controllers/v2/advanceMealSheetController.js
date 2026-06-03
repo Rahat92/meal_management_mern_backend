@@ -226,7 +226,7 @@ exports.getAdvanceMonthlySheet = async (req, res) => {
                                 _id: "$user",
 
                                 user: { $first: "$userInfo" },
-                                mealMonthUser: {$first:"$mealMonthUser"},
+                                mealMonthUser: { $first: "$mealMonthUser" },
                                 meals: {
                                     $push: {
                                         mealDay: "$mealDay",

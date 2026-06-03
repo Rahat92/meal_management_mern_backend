@@ -116,6 +116,290 @@ exports.getMealExpenses = async (req, res) => {
 
 
 
+// exports.getExpenseSummary = async (req, res) => {
+//   try {
+//     const { year, month, category, tag, user } = req.query;
+
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = Math.min(parseInt(req.query.limit) || 1000, 50);
+//     const skip = (page - 1) * limit;
+
+//     // ============================
+//     // 🔹 Dynamic Filters
+//     // ============================
+//     const matchShopping = {};
+
+//     if (category) {
+//       const catIds = category.split(",").map(id => new mongoose.Types.ObjectId(id));
+//       matchShopping.category = { $in: catIds };
+//     }
+
+//     if (tag) {
+//       const tagIds = tag.split(",").map(id => new mongoose.Types.ObjectId(id));
+//       matchShopping.tags = { $in: tagIds };
+//     }
+
+//     const pipeline = [
+
+//       { $match: matchShopping },
+
+//       // ============================
+//       // 🔥 BorderMeal + ACTIVE USER FILTER
+//       // ============================
+//       {
+//         $lookup: {
+//           from: "bordermeals",
+//           let: { borderMealId: "$borderMeal" },
+//           pipeline: [
+//             {
+//               $match: {
+//                 $expr: { $eq: ["$_id", "$$borderMealId"] }
+//               }
+//             },
+
+//             {
+//               $lookup: {
+//                 from: "users",
+//                 let: { userId: "$user" },
+//                 pipeline: [
+//                   {
+//                     $match: {
+//                       active: true,
+//                       $expr: { $eq: ["$_id", "$$userId"] }
+//                     }
+//                   },
+//                   {
+//                     $project: {
+//                       _id: 1,
+//                       name: 1
+//                     }
+//                   }
+//                 ],
+//                 as: "userInfo"
+//               }
+//             },
+
+//             { $unwind: "$userInfo" }, // ❗ removes inactive users
+
+//             {
+//               $project: {
+//                 user: "$userInfo._id",
+//                 userName: "$userInfo.name",
+//                 mealDay: 1
+//               }
+//             }
+//           ],
+//           as: "borderMeal"
+//         }
+//       },
+
+//       { $unwind: "$borderMeal" },
+
+//       // 🔹 Optional user filter (still works)
+//       ...(user
+//         ? [{
+//           $match: {
+//             "borderMeal.user": new mongoose.Types.ObjectId(user)
+//           }
+//         }]
+//         : []),
+
+//       // ============================
+//       // 🔹 MealDay
+//       // ============================
+//       {
+//         $lookup: {
+//           from: "mealdays",
+//           let: { mealDayId: "$borderMeal.mealDay" },
+//           pipeline: [
+//             {
+//               $match: {
+//                 $expr: { $eq: ["$_id", "$$mealDayId"] },
+//                 year: parseInt(year),
+//                 month: parseInt(month)
+//               }
+//             },
+//             {
+//               $project: {
+//                 date: 1,
+//                 day: 1
+//               }
+//             }
+//           ],
+//           as: "mealDay"
+//         }
+//       },
+//       { $unwind: "$mealDay" },
+
+//       // ============================
+//       // 🔹 Calculation
+//       // ============================
+//       {
+//         $addFields: {
+//           itemTotal: {
+//             $multiply: [
+//               "$unitPrice",
+//               { $ifNull: ["$quantity", 1] }
+//             ]
+//           }
+//         }
+//       },
+
+//       // ============================
+//       // 🔥 FACET
+//       // ============================
+//       {
+//         $facet: {
+
+//           summary: [
+//             {
+//               $group: {
+//                 _id: null,
+//                 totalExpense: { $sum: "$itemTotal" },
+//                 totalTransactions: { $sum: 1 }
+//               }
+//             }
+//           ],
+
+//           categorySummary: [
+//             {
+//               $group: {
+//                 _id: "$category",
+//                 total: { $sum: "$itemTotal" }
+//               }
+//             },
+//             {
+//               $lookup: {
+//                 from: "productcategories",
+//                 localField: "_id",
+//                 foreignField: "_id",
+//                 as: "category"
+//               }
+//             },
+//             { $unwind: "$category" },
+//             {
+//               $project: {
+//                 _id: 0,
+//                 name: "$category.name",
+//                 categoryId: "$category._id",
+//                 total: 1
+//               }
+//             },
+//             { $sort: { total: -1 } }
+//           ],
+
+//           userSummary: [
+//             {
+//               $group: {
+//                 _id: "$borderMeal.user",
+//                 name: { $first: "$borderMeal.userName" },
+//                 total: { $sum: "$itemTotal" }
+//               }
+//             },
+//             {
+//               $project: {
+//                 _id: 0,
+//                 userId: "$_id",
+//                 name: 1,
+//                 total: 1
+//               }
+//             },
+//             { $sort: { total: -1 } }
+//           ],
+
+//           tagSummary: [
+//             { $unwind: "$tags" },
+//             {
+//               $group: {
+//                 _id: "$tags",
+//                 total: { $sum: "$itemTotal" }
+//               }
+//             },
+//             {
+//               $lookup: {
+//                 from: "productstags",
+//                 localField: "_id",
+//                 foreignField: "_id",
+//                 as: "tag"
+//               }
+//             },
+//             { $unwind: "$tag" },
+//             {
+//               $project: {
+//                 _id: 0,
+//                 tagName: "$tag.name",
+//                 tagId: "$tag._id",
+//                 total: 1
+//               }
+//             },
+//             { $sort: { total: -1 } }
+//           ],
+
+//           // 🔥 PAGINATED RECENT
+//           recentData: [
+//             { $sort: { createdAt: -1 } },
+//             { $skip: skip },
+//             { $limit: limit },
+
+//             {
+//               $lookup: {
+//                 from: "productcategories",
+//                 localField: "category",
+//                 foreignField: "_id",
+//                 as: "category"
+//               }
+//             },
+//             { $unwind: "$category" },
+
+//             {
+//               $project: {
+//                 _id: 0,
+//                 date: "$createdAt",
+//                 product: "$productName",
+//                 category: "$category.name",
+//                 amount: "$itemTotal",
+//                 quantity: "$productCount",
+//                 user: "$borderMeal.userName" // ✅ no extra lookup needed
+//               }
+//             }
+//           ],
+
+//           recentCount: [
+//             { $count: "total" }
+//           ]
+//         }
+//       }
+//     ];
+
+//     const result = await ShoppingModel.aggregate(pipeline);
+
+//     const data = result[0] || {};
+//     const totalRecent = data.recentCount?.[0]?.total || 0;
+
+//     res.json({
+//       success: true,
+//       data: {
+//         ...data,
+//         recent: data.recentData || []
+//       },
+//       pagination: {
+//         total: totalRecent,
+//         page,
+//         limit,
+//         totalPages: Math.ceil(totalRecent / limit)
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to load expense summary"
+//     });
+//   }
+// };
+
+
 exports.getExpenseSummary = async (req, res) => {
   try {
     const { year, month, category, tag, user } = req.query;
@@ -372,7 +656,106 @@ exports.getExpenseSummary = async (req, res) => {
     ];
 
     const result = await ShoppingModel.aggregate(pipeline);
+    let userAllCategorySummary = [];
 
+    if (user) {
+      const userId = new mongoose.Types.ObjectId(user);
+
+      userAllCategorySummary = await ShoppingModel.aggregate([
+        {
+          // STEP 1: ignore category/tag filters completely
+          $lookup: {
+            from: "bordermeals",
+            let: { borderMealId: "$borderMeal" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ["$_id", "$$borderMealId"] }
+                }
+              },
+              {
+                $match: {
+                  user: userId
+                }
+              },
+              {
+                $project: {
+                  user: 1,
+                  mealDay: 1
+                }
+              }
+            ],
+            as: "borderMeal"
+          }
+        },
+
+        { $unwind: "$borderMeal" },
+
+        // STEP 2: restrict by year/month ONLY
+        {
+          $lookup: {
+            from: "mealdays",
+            let: { mealDayId: "$borderMeal.mealDay" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ["$_id", "$$mealDayId"] },
+                  year: parseInt(year),
+                  month: parseInt(month)
+                }
+              }
+            ],
+            as: "mealDay"
+          }
+        },
+
+        { $unwind: "$mealDay" },
+
+        // STEP 3: compute totals
+        {
+          $addFields: {
+            itemTotal: {
+              $multiply: [
+                "$unitPrice",
+                { $ifNull: ["$quantity", 1] }
+              ]
+            }
+          }
+        },
+
+        // STEP 4: GROUP BY CATEGORY
+        {
+          $group: {
+            _id: "$category",
+            total: { $sum: "$itemTotal" }
+          }
+        },
+
+        // STEP 5: join category names
+        {
+          $lookup: {
+            from: "productcategories",
+            localField: "_id",
+            foreignField: "_id",
+            as: "category"
+          }
+        },
+
+        { $unwind: "$category" },
+
+        {
+          $project: {
+            _id: 0,
+            categoryId: "$category._id",
+            name: "$category.name",
+            total: 1
+          }
+        },
+
+        { $sort: { total: -1 } }
+      ]);
+    }
+    console.log("userAllCategorySummary", userAllCategorySummary);
     const data = result[0] || {};
     const totalRecent = data.recentCount?.[0]?.total || 0;
 
@@ -398,7 +781,6 @@ exports.getExpenseSummary = async (req, res) => {
     });
   }
 };
-
 
 
 
