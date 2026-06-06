@@ -763,6 +763,7 @@ exports.getExpenseSummary = async (req, res) => {
       success: true,
       data: {
         ...data,
+        userAllCategorySummary: user ? userAllCategorySummary : undefined,
         recent: data.recentData || []
       },
       pagination: {
