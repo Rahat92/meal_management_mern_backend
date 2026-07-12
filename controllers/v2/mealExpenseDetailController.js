@@ -403,7 +403,6 @@ exports.getMealExpenses = async (req, res) => {
 exports.getExpenseSummary = async (req, res) => {
   try {
     const { year, month, category, tag, user } = req.query;
-
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(parseInt(req.query.limit) || 1000, 50);
     const skip = (page - 1) * limit;
@@ -423,13 +422,12 @@ exports.getExpenseSummary = async (req, res) => {
       matchShopping.tags = { $in: tagIds };
     }
 
-    const pipeline = [
-
-      { $match: matchShopping },
-
-      // ============================
-      // 🔥 BorderMeal + ACTIVE USER FILTER
-      // ============================
+    // ============================
+    // 🔹 Reusable lookup stages (borderMeal -> user, mealDay -> year/month)
+    // Used by the main pipeline AND the "ignore one filter" side-queries below,
+    // so all of them stay consistent with each other.
+    // ============================
+    const buildBaseLookupStages = () => ([
       {
         $lookup: {
           from: "bordermeals",
@@ -440,7 +438,6 @@ exports.getExpenseSummary = async (req, res) => {
                 $expr: { $eq: ["$_id", "$$borderMealId"] }
               }
             },
-
             {
               $lookup: {
                 from: "users",
@@ -462,9 +459,7 @@ exports.getExpenseSummary = async (req, res) => {
                 as: "userInfo"
               }
             },
-
             { $unwind: "$userInfo" }, // ❗ removes inactive users
-
             {
               $project: {
                 user: "$userInfo._id",
@@ -476,21 +471,7 @@ exports.getExpenseSummary = async (req, res) => {
           as: "borderMeal"
         }
       },
-
       { $unwind: "$borderMeal" },
-
-      // 🔹 Optional user filter (still works)
-      ...(user
-        ? [{
-          $match: {
-            "borderMeal.user": new mongoose.Types.ObjectId(user)
-          }
-        }]
-        : []),
-
-      // ============================
-      // 🔹 MealDay
-      // ============================
       {
         $lookup: {
           from: "mealdays",
@@ -514,10 +495,6 @@ exports.getExpenseSummary = async (req, res) => {
         }
       },
       { $unwind: "$mealDay" },
-
-      // ============================
-      // 🔹 Calculation
-      // ============================
       {
         $addFields: {
           itemTotal: {
@@ -527,7 +504,26 @@ exports.getExpenseSummary = async (req, res) => {
             ]
           }
         }
-      },
+      }
+    ]);
+
+    const pipeline = [
+
+      { $match: matchShopping },
+
+      // ============================
+      // 🔥 BorderMeal + ACTIVE USER FILTER
+      // ============================
+      ...buildBaseLookupStages(),
+
+      // 🔹 Optional user filter (still works)
+      ...(user
+        ? [{
+          $match: {
+            "borderMeal.user": new mongoose.Types.ObjectId(user)
+          }
+        }]
+        : []),
 
       // ============================
       // 🔥 FACET
@@ -656,106 +652,94 @@ exports.getExpenseSummary = async (req, res) => {
     ];
 
     const result = await ShoppingModel.aggregate(pipeline);
-    let userAllCategorySummary = [];
 
+    // ============================
+    // 🔹 Category OPTIONS (for the dropdown)
+    // Always runs. Ignores the category & tag filters completely so
+    // selecting a category never makes other categories disappear
+    // from the dropdown. Respects only user + year/month.
+    // ============================
+    const categoryOptionsMatch = {};
     if (user) {
-      const userId = new mongoose.Types.ObjectId(user);
-
-      userAllCategorySummary = await ShoppingModel.aggregate([
-        {
-          // STEP 1: ignore category/tag filters completely
-          $lookup: {
-            from: "bordermeals",
-            let: { borderMealId: "$borderMeal" },
-            pipeline: [
-              {
-                $match: {
-                  $expr: { $eq: ["$_id", "$$borderMealId"] }
-                }
-              },
-              {
-                $match: {
-                  user: userId
-                }
-              },
-              {
-                $project: {
-                  user: 1,
-                  mealDay: 1
-                }
-              }
-            ],
-            as: "borderMeal"
-          }
-        },
-
-        { $unwind: "$borderMeal" },
-
-        // STEP 2: restrict by year/month ONLY
-        {
-          $lookup: {
-            from: "mealdays",
-            let: { mealDayId: "$borderMeal.mealDay" },
-            pipeline: [
-              {
-                $match: {
-                  $expr: { $eq: ["$_id", "$$mealDayId"] },
-                  year: parseInt(year),
-                  month: parseInt(month)
-                }
-              }
-            ],
-            as: "mealDay"
-          }
-        },
-
-        { $unwind: "$mealDay" },
-
-        // STEP 3: compute totals
-        {
-          $addFields: {
-            itemTotal: {
-              $multiply: [
-                "$unitPrice",
-                { $ifNull: ["$quantity", 1] }
-              ]
-            }
-          }
-        },
-
-        // STEP 4: GROUP BY CATEGORY
-        {
-          $group: {
-            _id: "$category",
-            total: { $sum: "$itemTotal" }
-          }
-        },
-
-        // STEP 5: join category names
-        {
-          $lookup: {
-            from: "productcategories",
-            localField: "_id",
-            foreignField: "_id",
-            as: "category"
-          }
-        },
-
-        { $unwind: "$category" },
-
-        {
-          $project: {
-            _id: 0,
-            categoryId: "$category._id",
-            name: "$category.name",
-            total: 1
-          }
-        },
-
-        { $sort: { total: -1 } }
-      ]);
+      categoryOptionsMatch["borderMeal.user"] = new mongoose.Types.ObjectId(user);
     }
-    console.log("userAllCategorySummary", userAllCategorySummary);
+
+    const categoryOptionsSummary = await ShoppingModel.aggregate([
+      ...buildBaseLookupStages(),
+      ...(Object.keys(categoryOptionsMatch).length ? [{ $match: categoryOptionsMatch }] : []),
+      {
+        $group: {
+          _id: "$category",
+          total: { $sum: "$itemTotal" }
+        }
+      },
+      {
+        $lookup: {
+          from: "productcategories",
+          localField: "_id",
+          foreignField: "_id",
+          as: "category"
+        }
+      },
+      { $unwind: "$category" },
+      {
+        $project: {
+          _id: 0,
+          categoryId: "$category._id",
+          name: "$category.name",
+          total: 1
+        }
+      },
+      { $sort: { total: -1 } }
+    ]);
+
+    // ============================
+    // 🔹 Tag OPTIONS (for the dropdown)
+    // Always runs. Ignores the tag filter completely so selecting a tag
+    // never makes other tags disappear from the dropdown. Respects the
+    // user and/or category filters when present, so the list still
+    // narrows correctly for those.
+    // ============================
+    const tagOptionsMatch = {};
+    if (user) {
+      tagOptionsMatch["borderMeal.user"] = new mongoose.Types.ObjectId(user);
+    }
+    if (category) {
+      tagOptionsMatch.category = {
+        $in: category.split(",").map(id => new mongoose.Types.ObjectId(id))
+      };
+    }
+
+    const tagOptionsSummary = await ShoppingModel.aggregate([
+      ...buildBaseLookupStages(),
+      ...(Object.keys(tagOptionsMatch).length ? [{ $match: tagOptionsMatch }] : []),
+      { $unwind: "$tags" },
+      {
+        $group: {
+          _id: "$tags",
+          total: { $sum: "$itemTotal" }
+        }
+      },
+      {
+        $lookup: {
+          from: "productstags",
+          localField: "_id",
+          foreignField: "_id",
+          as: "tag"
+        }
+      },
+      { $unwind: "$tag" },
+      {
+        $project: {
+          _id: 0,
+          tagId: "$tag._id",
+          tagName: "$tag.name",
+          total: 1
+        }
+      },
+      { $sort: { total: -1 } }
+    ]);
+
     const data = result[0] || {};
     const totalRecent = data.recentCount?.[0]?.total || 0;
 
@@ -763,7 +747,8 @@ exports.getExpenseSummary = async (req, res) => {
       success: true,
       data: {
         ...data,
-        userAllCategorySummary: user ? userAllCategorySummary : undefined,
+        categoryOptionsSummary,
+        tagOptionsSummary,
         recent: data.recentData || []
       },
       pagination: {
