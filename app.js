@@ -23,7 +23,7 @@ const depositRouter = require("./routes/v2/depositRoutes");
 const mealYearMonthRouter = require("./routes/v2/yearMonthRoutes");
 
 const allowedOrigins = [
-  "https://kikhaben.vercel.app",
+  "https://panahar.vercel.app",
   "http://localhost:3000"
 ];
 
